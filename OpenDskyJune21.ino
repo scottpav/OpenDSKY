@@ -18,10 +18,11 @@ SoftwareSerial mySerial(8, 9);
 RTC_DS1307 rtc;
 
 #include<Wire.h>
-  const int MPU_addr=0x69;  // I2C address of the MPU-6050
-  long imuval[7];
-  byte digitval[7][7];
-    
+unsigned long previousMillis = 0;   
+bool displayOn = false;     
+const int MPU_addr=0x69;  // I2C address of the MPU-6050
+long imuval[7];
+byte digitval[7][7];   
 byte keyVal = 20;
 byte oldkey = 20;
 bool fresh = 0;
@@ -45,7 +46,11 @@ bool error = 0;
 bool newAct = 0;
 byte audioTrack = 1;
 
-  
+float gpsLat0;
+float gpsLong0;
+float gpsLat;
+float gpsLong;
+float gpsBearing; //deg
 
 void setup() {
   pinMode(A0, INPUT);
@@ -81,6 +86,17 @@ rtc.begin();
   delay(1000);
   mySerial.println(PMTK_Q_RELEASE);
  //END GPS
+    lampit(0,255,0, 0);
+    lampit(0,255,0, 1);
+    lampit(0,255,0, 2);
+ for(int i=1;i<4;i++) {
+    lc.setRow(i,0,B00100100);
+    lc.setChar(i,1,'-',false);
+    lc.setChar(i,2,'-',false);
+    lc.setChar(i,3,'-',false);
+    lc.setChar(i,4,'-',false);
+    lc.setChar(i,5,'-',false);
+   }
  }
 SIGNAL(TIMER0_COMPA_vect) {
   char c = GPS.read();
@@ -176,7 +192,7 @@ void mode4() {
     }
   }
   delay(5000);
-  for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
+ // for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
   for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
   for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
   for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
@@ -202,7 +218,7 @@ void action2() { // Reads Time from RTC
   DateTime now = rtc.now();
    imuval[4] = (now.hour());
    imuval[5] = (now.minute());
-   imuval[6] = ((now.second() * 100));
+   imuval[6] = (now.second());
    setDigits();  
 }
 
@@ -329,12 +345,24 @@ DateTime now = rtc.now();
 
 void action7(){     //Read GPS VEL & ALT
   lampit(0,0,0, 16);
-  compAct(); 
   if (!GPS.fix) {
    lampit(255,0,0, 16);
+    lampit(255,200,59, 15);
+
+   for(int i=1;i<4;i++) {
+    lc.setRow(i,0,B00100100);
+    lc.setChar(i,1,'-',false);
+    lc.setChar(i,2,'-',false);
+    lc.setChar(i,3,'-',false);
+    lc.setChar(i,4,'-',false);
+    lc.setChar(i,5,'-',false);
+   }
+ 
   }
   int currentTime = 0;
   int speedKnots = 0;
+  int lat = 0;
+  int lon = 0;
   int alt = 0;
   byte data[83];
   int index = 0;
@@ -346,9 +374,10 @@ void action7(){     //Read GPS VEL & ALT
       return;  // we can fail to parse a sentence in which case we should just wait for another
   } 
   if (timer > millis())  timer = millis();
-  if (millis() - timer > 2000) { 
+  if (millis() - timer > 1000) { 
     timer = millis(); // reset the timer
     if (GPS.fix) {
+     compAct(); 
      lampit(255,255,255, 9);
      lampit(255,255,255, 10);
      currentTime = GPS.latitudeDegrees;
@@ -357,13 +386,19 @@ void action7(){     //Read GPS VEL & ALT
      index++;
      if(index >= 72) {index = 71; }
       speedKnots = GPS.speed;
+      lat = GPS.latitude;
+      lon = GPS.longitude;
       alt = GPS.altitude;
+      gpsLatLong(lat, 0, lon, 0);
+        float distLat = abs(80 - gpsLat) * 111194.9;
+        float distLong = 111194.9 * abs(30 - gpsLong) * cos(radians((30 + gpsLat) / 2));
+        float distance = sqrt(pow(distLat, 2) + pow(distLong, 2));
+         imuval[4] = lat;
+         imuval[5] = lon;
+         imuval[6] = distance;
+         setDigits(); 
     }
   }
-    imuval[4] = currentTime;
-    imuval[5] = speedKnots;
-    imuval[6] = alt;
-    setDigits(); 
 }
 
 void action8() { // T-Minus countdown timer
@@ -374,24 +409,34 @@ DateTime now = rtc.now();
   int NHR = 0;
   int NMI = 0;
   int NSE = 0;
+  unsigned long currentMillis = millis();
   while(keyVal == 15){ keyVal = readkb();}
   
   while(keyVal != 15){
-    Serial.println(keyVal);
    keyVal = readkb();
    if(keyVal != oldkey) {
-    oldkey = keyVal;
-   if(keyVal == 12) {NHR++;}
-   if(keyVal == 13) {NHR--;}
-   if( NHR > 23) {NHR = 0;}
-   if(NHR < 0) {NHR = 23;}
+     oldkey = keyVal;
+     if(keyVal == 12) {NHR++;}
+     if(keyVal == 13) {NHR--;}
+     if( NHR > 23) {NHR = 0;}
+     if(NHR < 0) {NHR = 23;}
    }
    imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-   setDigits();
-   delay(200);
-   lc.clearDisplay(1);
-   delay(50); 
+   if (timer > millis())  timer = millis();
+      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+        timer = millis(); // reset the timer
+      // if the LED is off turn it on and vice-versa:
+      if (displayOn) {      // this makes Pin2 blinks off-on
+        lc.clearDisplay(1);
+        displayOn = false;
+        } 
+      else {
+        displayOn = true;
+        setDigits();
+      }
+    }
   }
+  
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
    keyVal = readkb();
@@ -403,11 +448,21 @@ DateTime now = rtc.now();
    if(NMI < 0) {NMI = 59;} 
    }
    imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-   setDigits(); 
-   delay(200);
-   lc.clearDisplay(2);
-   delay(50); 
-  }
+ if (timer > millis())  timer = millis();
+      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+        timer = millis(); // reset the timer
+      // if the LED is off turn it on and vice-versa:
+      if (displayOn) {      // this makes Pin2 blinks off-on
+        lc.clearDisplay(2);
+        displayOn = false;
+        } 
+      else {
+        displayOn = true;
+        setDigits();
+      } 
+    }
+    }
+    
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
    keyVal = readkb();
@@ -419,16 +474,31 @@ DateTime now = rtc.now();
    if(NSE < 0) {NSE = 59;}
    }
    imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-   setDigits();
-   delay(200);
-   lc.clearDisplay(3);
-   delay(50);  
+   if (timer > millis())  timer = millis();
+      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+        timer = millis(); // reset the timer
+      // if the LED is off turn it on and vice-versa:
+      if (displayOn) {      // this makes Pin2 blinks off-on
+        lc.clearDisplay(3);
+        displayOn = false;
+        } 
+      else {
+        displayOn = true;
+        setDigits();
+      }
+    }
   }
  startCountdown(NHR , NMI , NSE);
 }
 
 
-
+void gpsLatLong(int lat1, int lat2, int long1, int long2)
+{
+  gpsLat = int(lat1 / 100) + (lat1 % 100) / 60.0 + float(lat2) / 10000.0 / 60.0;
+  gpsLong = int(long1 / 100) + (long1 % 100) / 60.0 + float(long2) / 10000.0 / 60.0;
+}
+      
+      
 void mode11() {
  compAct(); 
 }
@@ -487,13 +557,13 @@ void processkey1() {
   else {
     
     lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0;
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;
   if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);} else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}}//verb 
-  if((keyVal == 11) && (fresh == 1)){mode = 2;lampit(0,0,0, 2);count = 0; fresh = 0;}//noun
-  if((keyVal == 14) && (fresh == 1)){mode = 3;lampit(0,0,0, 2);count = 0; fresh = 0;}//program
+  if((keyVal == 11) && (fresh == 1)){mode = 2;count = 0; fresh = 0;}//noun
+  if((keyVal == 14) && (fresh == 1)){mode = 3;count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) { verbnew[count] = keyVal;setdigits(0, count, keyVal);count++;fresh = 0;}
 }
 }
@@ -505,14 +575,14 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
   if((noun != 17) && (noun != 36) && (noun != 33) && (noun != 37) && (noun != 46) && (noun != 43) && (noun != 68) && (noun != 0)) {error = 1; noun = ((nounold[0] * 10) + nounold[1]);  }
   else {
     lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
  
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0;
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;
   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);} else{setdigits(0, 4,nounold[0]);setdigits(0, 5,nounold[1]);}}//verb 
-  if((keyVal == 10) && (fresh == 1)){mode = 1;lampit(0,0,0, 0);count = 0; fresh = 0;}//verb
-  if((keyVal == 14) && (fresh == 1)){mode = 3;lampit(0,0,0, 0);count = 0; fresh = 0;}//program
+  if((keyVal == 10) && (fresh == 1)){mode = 1;count = 0; fresh = 0;}//verb
+  if((keyVal == 14) && (fresh == 1)){mode = 3;count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) {nounnew[count] = keyVal;setdigits(0, (count + 4), keyVal);count++;}
 }
 }
@@ -521,13 +591,13 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
   if((keyVal == 15) && (fresh == 1)) {prog = ((prognew[0] * 10) + (prognew[1]));fresh = 0;
   if((prog != 16) && (prog != 21) && (prog != 35) && (prog != 11) && (prog != 62) && (prog != 69) &&(prog != 70) && (prog != 0)) {error = 1;} else {
     progold[0] = prognew[0]; progold[1] = prognew[1];lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 1);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
  if(keyVal != oldkey) { fresh = 1; oldkey = keyVal; }
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 1);count = 0; fresh = 0;}//verb 
-  if((keyVal == 11) && (fresh == 1)){mode = 2;lampit(0,0,0, 1);count = 0; fresh = 0;}//noun
-  if((keyVal == 10) && (fresh == 1)){mode = 1;lampit(0,0,0, 1);count = 0; fresh = 0;}//verb
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;}//verb 
+  if((keyVal == 11) && (fresh == 1)){mode = 2;count = 0; fresh = 0;}//noun
+  if((keyVal == 10) && (fresh == 1)){mode = 1;count = 0; fresh = 0;}//verb
   if((keyVal < 10)&&(count < 2)) {prognew[count] = keyVal;setdigits(0, (count + 2), keyVal);count++;}
 }
 
@@ -688,6 +758,3 @@ void startCountdown(int HOURS, int MINUTES, int SECONDS){
     //ACTIVATE BUZZER
  }
 }
- 
-
-
