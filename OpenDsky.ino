@@ -143,7 +143,7 @@ void loop() {
  if(action == 1) {action1();} // V16N17 ReadIMU
  if(action == 2) {action2();} // V16N36 ReadTime
  if(action == 3) {action3();} // V16N43 GPS POS & ALT
- if(action == 4) {action4();} // READ IMU WITH RANDOM 1202 ALARM
+ if(action == 4) {action4();} // V16N87 READ IMU WITH RANDOM 1202 ALARM
  if(action == 5) {action5();} // V21N36 Set The Time
  if(action == 6) {action6();} // V21N37 Set The Date
  if(action == 7) {action7();} // V16N46 GPS VEL & ALT
@@ -677,13 +677,14 @@ void validateAct(){
 
  else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time 
  else if((verb == 16) && (noun == 43)) {action = 3;newAct = 0;count = 0;}//Display current GPS
+ else if((verb == 16) && (noun == 68)) {action = 4;newAct = 0;}//Display Range With 1202 ERROR
+ else if((verb == 21) && (noun == 36)) {action = 5;newAct = 0;}//set time
+ else if((verb == 21) && (noun == 37)) {action = 6;newAct = 0;}//set date
  else if((verb == 16) && (noun == 46)) {action = 7;newAct = 0;count = 0;}//Display current ALT and Speed
  else if((verb == 16) && (noun == 33)) {action = 8;newAct = 0; prog = 11; count = 0;}//Countdown Timer
  else if(prog == 11) {action = 8;newAct = 0; verb = 16; noun = 33;}
 
- else if((verb == 16) && (noun == 68)) {action = 4;newAct = 0;}//Display Range With 1202 ERROR
- else if((verb == 21) && (noun == 36)) {action = 5;newAct = 0;}//set time
- else if((verb == 21) && (noun == 37)) {action = 6;newAct = 0;}//set date
+
  
  
  else{newAct = 0;action = 0;}
