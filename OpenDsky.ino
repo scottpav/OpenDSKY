@@ -730,8 +730,8 @@ void readimu_xyz(){
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
       Wire.endTransmission(false);
       Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
-       int randNumb = random(10, 80); 
-        if ((randNumb == 11) || (randNumb == 22) || alarm) {
+       int randNumb = random(10, 700); 
+        if (randNumb == 121 || randNumb == 677 || alarm) {
           lampit(100,100,0,6);
           lampit(0,0,0,3);
           lampit(0,0,0,17);
