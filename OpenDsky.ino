@@ -20,7 +20,9 @@ RTC_DS1307 rtc;
 #include<Wire.h>
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
-const int MPU_addr=0x69;  // I2C address of the MPU-6050
+bool alarm = false;     
+
+const int MPU_addr=0x68;  // I2C address of the MPU-6050
 long imuval[7];
 byte digitval[7][7];   
 byte keyVal = 20;
@@ -45,6 +47,7 @@ byte togcount = 0;
 bool error = 0;
 bool newAct = 0;
 byte audioTrack = 1;
+uint8_t alarmHours = 0, alarmMinutes = 0;  // Holds the current alarm time
 
 float gpsLat0;
 float gpsLong0;
@@ -86,18 +89,20 @@ rtc.begin();
   delay(1000);
   mySerial.println(PMTK_Q_RELEASE);
  //END GPS
-    lampit(0,255,0, 0);
-    lampit(0,255,0, 1);
-    lampit(0,255,0, 2);
- for(int i=1;i<4;i++) {
-    lc.setRow(i,0,B00100100);
-    lc.setChar(i,1,'-',false);
-    lc.setChar(i,2,'-',false);
-    lc.setChar(i,3,'-',false);
-    lc.setChar(i,4,'-',false);
-    lc.setChar(i,5,'-',false);
-   }
+//    lampit(0,255,0, 0);
+//    lampit(0,255,0, 1);
+//    lampit(0,255,0, 2);
+// for(int i=1;i<4;i++) {
+//    lc.setRow(i,0,B00100100);
+//    lc.setChar(i,1,'-',false);
+//    lc.setChar(i,2,'-',false);
+//    lc.setChar(i,3,'-',false);
+//    lc.setChar(i,4,'-',false);
+//    lc.setChar(i,5,'-',false);
+//   }
+startUp();
  }
+ 
 SIGNAL(TIMER0_COMPA_vect) {
   char c = GPS.read();
 #ifdef UDR0
@@ -138,6 +143,7 @@ void loop() {
  if(action == 1) {action1();} // V16N17 ReadIMU
  if(action == 2) {action2();} // V16N36 ReadTime
  if(action == 3) {action3();} // V16N43 GPS POS & ALT
+ if(action == 4) {action4();} // READ IMU WITH RANDOM 1202 ALARM
  if(action == 5) {action5();} // V21N36 Set The Time
  if(action == 6) {action6();} // V21N37 Set The Date
  if(action == 7) {action7();} // V16N46 GPS VEL & ALT
@@ -148,6 +154,7 @@ void loop() {
  Serial.print(noun);
  Serial.print("  ");
  Serial.println(action);
+ //WakeUpAlarm();
 }
 
 void mode0() {//no action set just reading the kb
@@ -181,18 +188,46 @@ void mode3() {//inputing the program
  keyVal = readkb();
  processkey3();
 }
-
-void mode4() {
-  for (int index = 0; index < 4; index++){lampit(0,150,0, index);}
-  for (int index = 4; index < 11; index++) {lampit(100,100,0, index);}
-  for (int index = 11; index < 18; index++) {lampit(100,100,100, index);}
+void startUp() {
+  for (int index = 0; index < 4; index++){lampit(0,150,0, index);delay(50);}
+  for (int index = 4; index < 18; index++) {if(index < 11){lampit(100,100,0, index);}if(index <= 12){lampit(100,100,100, 23-index);}delay(50);}
+//for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
   for (int index = 0; index < 4; index++) {
     for (int indexb = 0; indexb < 6; indexb++){
       setdigits(index,indexb,8);
+      delay(25);
+    }
+  }
+  delay(2000);
+  for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
+  for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
+  for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
+  for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
+  verbnew[0] = verbold[0]; verbnew[1] = verbold[1];
+  verb = ((verbold[0] * 10) + verbold[1]);
+  if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);}
+  else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}
+  if (prog == 0) {lc.setRow(0,2,0);lc.setRow(0,3,0);}
+  else{setdigits(0, 0,prognew[0]);setdigits(0, 1,prognew[1]);}
+   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);}
+  else{setdigits(0, 4,nounnew[0]);setdigits(0, 5,nounnew[1]);}
+  keyVal = 20;
+  mode = 0;
+  validateAct(); 
+  }
+
+void mode4() {
+  for (int index = 0; index < 4; index++){lampit(0,150,0, index);delay(50);}
+  for (int index = 4; index < 18; index++) {if(index < 11){lampit(100,100,0, index);}if(index <= 12){lampit(100,100,100, 23-index);}delay(50);}
+//for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
+  for (int index = 0; index < 4; index++) {
+    for (int indexb = 0; indexb < 6; indexb++){
+      setdigits(index,indexb,8);
+      delay(25);
     }
   }
   delay(5000);
- // for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
+  for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
   for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
   for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
   for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
@@ -211,7 +246,7 @@ void mode4() {
 
 
 void action1() {
- readimu(); 
+ readimu_xyz(); 
 }
 
 void action2() { // Reads Time from RTC
@@ -255,11 +290,8 @@ void action3(){     //Read GPS POS & ALT
   }
 }
 
-void action4() { // 1202 Alarm
-
-   imuval[4] = 1202;
-   imuval[5] = 1202;
-   setDigits();  
+void action4() { // IMU XYZ Delta
+  imu_1202(); 
 }
 
 void action5() { // Sets Time To RTC
@@ -347,8 +379,7 @@ void action7(){     //Read GPS VEL & ALT
   lampit(0,0,0, 16);
   if (!GPS.fix) {
    lampit(255,0,0, 16);
-    lampit(255,200,59, 15);
-
+   lampit(255,200,59, 15);
    for(int i=1;i<4;i++) {
     lc.setRow(i,0,B00100100);
     lc.setChar(i,1,'-',false);
@@ -388,20 +419,19 @@ void action7(){     //Read GPS VEL & ALT
       speedKnots = GPS.speed;
       float latDeg = GPS.latitudeDegrees;
       float lonDeg = GPS.longitudeDegrees;
-      lat = latDeg * 100;
-      lon = lonDeg * 100;
+      gpsLat0 = 34.79;
+      gpsLong0 = -86.78;
+      gpsLatLong(gpsLat0, latDeg, gpsLong0, lonDeg);
+
       alt = GPS.altitude;
-      gpsLatLong(lat, lon);
       Serial.println(lat);
       Serial.println(lon);
-        float distLat = 34.79 - latDeg;
-        float distLong = -86.78 - lonDeg * cos(radians((-86.78 + latDeg) / 2));
-        float distance = sqrt(pow(distLat, 2) + pow(distLong, 2)) / 10;
-              Serial.println(distance);
-        int printDistance = distance * 100;
+      float distLat = abs(gpsLat0 - gpsLat) * 111194.9;
+      float distLong = 111194.9 * abs(gpsLong0 - gpsLong) * cos(radians((gpsLat0 + gpsLat) / 2));
+      float distance = sqrt(pow(distLat, 2) + pow(distLong, 2));
          imuval[4] = lat;
          imuval[5] = lon;
-         imuval[6] = printDistance;
+         imuval[6] = distance;
          setDigits(); 
     }
   }
@@ -498,11 +528,11 @@ DateTime now = rtc.now();
 }
 
 
-void gpsLatLong(int lat, int lon)
+void gpsLatLong(int lat1, int lat2, int long1, int long2)
 {
-
-      
-}    
+  gpsLat = int(lat1 / 100) + (lat1 % 100) / 60.0 + float(lat2) / 10000.0 / 60.0;
+  gpsLong = int(long1 / 100) + (long1 % 100) / 60.0 + float(long2) / 10000.0 / 60.0;
+}
 void mode11() {
  compAct(); 
 }
@@ -561,13 +591,13 @@ void processkey1() {
   else {
     
     lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0;
   if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);} else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}}//verb 
-  if((keyVal == 11) && (fresh == 1)){mode = 2;count = 0; fresh = 0;}//noun
-  if((keyVal == 14) && (fresh == 1)){mode = 3;count = 0; fresh = 0;}//program
+  if((keyVal == 11) && (fresh == 1)){mode = 2;lampit(0,0,0, 2);count = 0; fresh = 0;}//noun
+  if((keyVal == 14) && (fresh == 1)){mode = 3;lampit(0,0,0, 2);count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) { verbnew[count] = keyVal;setdigits(0, count, keyVal);count++;fresh = 0;}
 }
 }
@@ -576,18 +606,20 @@ void processkey2() {
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {fresh = 0;
     noun = ((nounnew[0] * 10) + (nounnew[1]));fresh = 0;
-  if((noun != 17) && (noun != 36) && (noun != 33) && (noun != 37) && (noun != 46) && (noun != 43) && (noun != 68) && (noun != 0)) {error = 1; noun = ((nounold[0] * 10) + nounold[1]);  }
+  if((noun != 17) && (noun != 36) && (noun != 33) && (noun != 37) && (noun != 46) && (noun != 43) && (noun != 68) && (noun != 87)&& (noun != 0)) {error = 1; noun = ((nounold[0] * 10) + nounold[1]);  }
   else {
     lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
  
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0;
   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);} else{setdigits(0, 4,nounold[0]);setdigits(0, 5,nounold[1]);}}//verb 
-  if((keyVal == 10) && (fresh == 1)){mode = 1;count = 0; fresh = 0;}//verb
-  if((keyVal == 14) && (fresh == 1)){mode = 3;count = 0; fresh = 0;}//program
+  if((keyVal == 10) && (fresh == 1)){mode = 1;lampit(0,0,0, 0);count = 0; fresh = 0;}//verb
+  if((keyVal == 14) && (fresh == 1)){mode = 3;lampit(0,0,0, 0);count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) {nounnew[count] = keyVal;setdigits(0, (count + 4), keyVal);count++;}
+  if(verb == 16 && noun == 87) {prog = 11; setdigits(0, 2, 1);setdigits(0, 3, 1);} 
+
 }
 }
 void processkey3() {
@@ -595,13 +627,13 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
   if((keyVal == 15) && (fresh == 1)) {prog = ((prognew[0] * 10) + (prognew[1]));fresh = 0;
   if((prog != 16) && (prog != 21) && (prog != 35) && (prog != 11) && (prog != 62) && (prog != 69) &&(prog != 70) && (prog != 0)) {error = 1;} else {
     progold[0] = prognew[0]; progold[1] = prognew[1];lampit(0,0,0, 13);
-    mode = 0;lampit(0,0,0, 14);count = 0; fresh = 0; error = 0; newAct = 1;
+    mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 1);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
   
  if(keyVal != oldkey) { fresh = 1; oldkey = keyVal; }
-  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);count = 0; fresh = 0;}//verb 
-  if((keyVal == 11) && (fresh == 1)){mode = 2;count = 0; fresh = 0;}//noun
-  if((keyVal == 10) && (fresh == 1)){mode = 1;count = 0; fresh = 0;}//verb
+  if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 1);count = 0; fresh = 0;}//verb 
+  if((keyVal == 11) && (fresh == 1)){mode = 2;lampit(0,0,0, 1);count = 0; fresh = 0;}//noun
+  if((keyVal == 10) && (fresh == 1)){mode = 1;lampit(0,0,0, 1);count = 0; fresh = 0;}//verb
   if((keyVal < 10)&&(count < 2)) {prognew[count] = keyVal;setdigits(0, (count + 2), keyVal);count++;}
 }
 
@@ -610,11 +642,17 @@ void processkeytime(){
 }
 
 void compAct(){
-int randNumb = random(10, 30); 
-if ((randNumb == 15) || (randNumb == 25)) {lampit(0,150,0,3);}
-else {lampit(0,0,0,3);}
-if ((randNumb == 17) || (randNumb == 25)) {lampit(90,90,90,17);}
-else {lampit(0,0,0,17);}
+  int randNumb = random(10, 30); 
+  if ((randNumb == 15) || (randNumb == 25) || (randNumb == 5)) {lampit(0,150,0,3);}
+  else {lampit(0,0,0,3);}
+  if ((randNumb == 17) || (randNumb == 25)) {lampit(90,90,90,17);}
+  else {lampit(0,0,0,17);}
+}
+
+void rangeAct(){
+int randNumb = random(10, 60); 
+    if ((randNumb == 11) || (randNumb == 20)) {lampit(255,193,8,10);}
+    else {lampit(0,0,0,10);}
 }
 void lampit(byte r, byte g, byte b , int lamp) {
     pixels.setPixelColor(lamp, pixels.Color(r,g,b)); // Set it the way we like it.
@@ -634,7 +672,9 @@ void flasher() {
 
 void validateAct(){
  if(verb == 35) {mode = 4; newAct = 0;}// Lamp Test
- else if((verb == 16) && (noun == 17)) {action = 1;newAct = 0;}//Display IMU Attitude
+ else if((verb == 16) && (noun == 17)) {action = 1;newAct = 0;}//Display IMU XYZ
+  else if((verb == 16) && (noun == 87)) {action = 4;newAct = 0;}//Display IMU Delta
+
  else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time 
  else if((verb == 16) && (noun == 43)) {action = 3;newAct = 0;count = 0;}//Display current GPS
  else if((verb == 16) && (noun == 46)) {action = 7;newAct = 0;count = 0;}//Display current ALT and Speed
@@ -648,7 +688,6 @@ void validateAct(){
  
  else{newAct = 0;action = 0;}
 }
-
 void readimu(){
   compAct();
       Wire.beginTransmission(MPU_addr);
@@ -658,22 +697,81 @@ void readimu(){
       imuval[0]=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)    
       imuval[1]=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
       imuval[2]=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
-      imuval[3]=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
+      //imuval[3]=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H) & 0x42 (TEMP_OUT_L)
       imuval[4]=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
       imuval[5]=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
       imuval[6]=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
-      imuval[3] = (imuval[3]/340.00+36.53);//equation for temperature in degrees C from datasheet
-     /* Serial.print("AcX = "); Serial.print(imuval[0]);
+    //  imuval[3] = (imuval[3]/340.00+36.53);//equation for temperature in degrees C from datasheet
+      Serial.print("AcX = "); Serial.print(imuval[0]);
       Serial.print(" | AcY = "); Serial.print(imuval[1]);
       Serial.print(" | AcZ = "); Serial.print(imuval[2]);
-      Serial.print(" | Tmp = "); Serial.print(imuval[3]);  
       Serial.print(" | GyX = "); Serial.print(imuval[4]);
       Serial.print(" | GyY = "); Serial.print(imuval[5]);
       Serial.print(" | GyZ = "); Serial.println(imuval[6]);
-     */ 
+      
     setDigits();      
-        
  }
+void readimu_xyz(){
+  compAct();
+      Wire.beginTransmission(MPU_addr);
+      Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+      Wire.endTransmission(false);
+      Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
+      imuval[4]=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+      imuval[5]=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+      imuval[6]=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+    setDigits();      
+ }
+
+ void imu_1202(){
+  compAct();
+      Wire.beginTransmission(MPU_addr);
+      Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
+      Wire.endTransmission(false);
+      Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
+       int randNumb = random(10, 80); 
+        if ((randNumb == 11) || (randNumb == 22) || alarm) {
+          lampit(100,100,0,6);
+          lampit(0,0,0,3);
+          lampit(0,0,0,17);
+          alarm = true;
+              keyVal = readkb();
+              imuval[4]= 1202;
+              imuval[5]= 1202;
+              setDigits(); 
+            while(keyVal != 15){
+            keyVal = readkb();
+             for(int i=1;i<4;i++) {
+                lc.setRow(i,0,B00000000);
+                lc.setRow(i,1,B00000000); 
+                if(i == 3){
+                   for(int d=0;d<6;d++) {
+                     lc.setRow(i,d,B00000000);
+                   }
+                }
+             }
+            if(keyVal != oldkey) {
+              for(int i=0;i<7;i++) {
+                lc.setRow(1,i,B00000000);
+                lc.setRow(2,i,B00000000); 
+                lc.setRow(3,i,B00000000); 
+                lc.setRow(4,i,B00000000); 
+              }
+            oldkey = keyVal;              
+            alarm = false;
+           }
+         }
+        }
+        else {
+          alarm = false;
+          lampit(0,0,0,6);
+          imuval[4]=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+          imuval[5]=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+          imuval[6]=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+          setDigits();      
+        }
+ }
+ 
  void setDigits(){
      for (int indexa = 0; indexa < 8; indexa ++){
       for (int index = 0; index < 7; index++) {
@@ -722,11 +820,6 @@ void readimu(){
   }
 
 void startCountdown(int HOURS, int MINUTES, int SECONDS){
-
-  lampit(0,255,0,0);
-  lampit(0,255,0,1);
-  lampit(0,255,0,2);
-
  action = 8; setdigits(0, 0, 1);setdigits(0, 1, 6);setdigits(0, 4, 3);setdigits(0, 5, 3);verbold[0] = 1; verbold[1] = 6; verb = 16; noun = 33; nounold[0] = 3; nounold[1] = 3; 
  int totalSeconds = (HOURS * 60) * 60 + (MINUTES * 60) + SECONDS;
   imuval[4] = HOURS;
@@ -762,3 +855,16 @@ void startCountdown(int HOURS, int MINUTES, int SECONDS){
     //ACTIVATE BUZZER
  }
 }
+
+void WakeUpAlarm(){
+DateTime now = rtc.now();
+     if ( now.hour() == alarmHours && now.minute() == alarmMinutes )
+        {
+         DateTime now = rtc.now();
+        //ACTIVATE BUZZER
+          Serial.println("WAKE UP!");
+        }
+    else{
+          //STOP BUZZER
+        }
+    } 
