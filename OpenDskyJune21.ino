@@ -386,16 +386,22 @@ void action7(){     //Read GPS VEL & ALT
      index++;
      if(index >= 72) {index = 71; }
       speedKnots = GPS.speed;
-      lat = GPS.latitude;
-      lon = GPS.longitude;
+      float latDeg = GPS.latitudeDegrees;
+      float lonDeg = GPS.longitudeDegrees;
+      lat = latDeg * 100;
+      lon = lonDeg * 100;
       alt = GPS.altitude;
-      gpsLatLong(lat, 0, lon, 0);
-        float distLat = abs(80 - gpsLat) * 111194.9;
-        float distLong = 111194.9 * abs(30 - gpsLong) * cos(radians((30 + gpsLat) / 2));
-        float distance = sqrt(pow(distLat, 2) + pow(distLong, 2));
+      gpsLatLong(lat, lon);
+      Serial.println(lat);
+      Serial.println(lon);
+        float distLat = 34.79 - latDeg;
+        float distLong = -86.78 - lonDeg * cos(radians((-86.78 + latDeg) / 2));
+        float distance = sqrt(pow(distLat, 2) + pow(distLong, 2)) / 10;
+              Serial.println(distance);
+        int printDistance = distance * 100;
          imuval[4] = lat;
          imuval[5] = lon;
-         imuval[6] = distance;
+         imuval[6] = printDistance;
          setDigits(); 
     }
   }
@@ -492,13 +498,11 @@ DateTime now = rtc.now();
 }
 
 
-void gpsLatLong(int lat1, int lat2, int long1, int long2)
+void gpsLatLong(int lat, int lon)
 {
-  gpsLat = int(lat1 / 100) + (lat1 % 100) / 60.0 + float(lat2) / 10000.0 / 60.0;
-  gpsLong = int(long1 / 100) + (long1 % 100) / 60.0 + float(long2) / 10000.0 / 60.0;
-}
+
       
-      
+}    
 void mode11() {
  compAct(); 
 }
