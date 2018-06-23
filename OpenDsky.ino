@@ -1,13 +1,14 @@
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
+#include <math.h>
 SoftwareSerial mySerial(8, 9);
   #define PIN            6
   #define NUMPIXELS      18
   Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
   Adafruit_GPS GPS(&mySerial); 
-  #define GPSECHO  true
+  #define GPSECHO  false
   boolean usingInterrupt = false;
   void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
 
@@ -21,7 +22,13 @@ RTC_DS1307 rtc;
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
 bool alarm = false;     
-
+const float deg2rad = 0.01745329251994;
+const float rEarth = 6371000.0; //can replace with 3958.75 mi, 6370.0 km, or 3440.06 NM
+float range = 123.45;    // distance from HERE to THERE
+int rangeft = 5300;
+float bearing = 100;
+String bearingletter;
+String here;             // read from GPS
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 long imuval[7];
 byte digitval[7][7];   
@@ -54,6 +61,7 @@ float gpsLong0;
 float gpsLat;
 float gpsLong;
 float gpsBearing; //deg
+String there = "N34 47.337, W086 46.537"; //Home
 
 void setup() {
   pinMode(A0, INPUT);
@@ -377,6 +385,8 @@ DateTime now = rtc.now();
 
 void action7(){     //Read GPS VEL & ALT
   lampit(0,0,0, 16);
+  lampit(0,0,0, 15);
+
   if (!GPS.fix) {
    lampit(255,0,0, 16);
    lampit(255,200,59, 15);
@@ -409,8 +419,6 @@ void action7(){     //Read GPS VEL & ALT
     timer = millis(); // reset the timer
     if (GPS.fix) {
      compAct(); 
-     lampit(255,255,255, 9);
-     lampit(255,255,255, 10);
      currentTime = GPS.latitudeDegrees;
      data[index] = Serial.read();
      delayMicroseconds(960);
@@ -419,19 +427,34 @@ void action7(){     //Read GPS VEL & ALT
       speedKnots = GPS.speed;
       float latDeg = GPS.latitudeDegrees;
       float lonDeg = GPS.longitudeDegrees;
-      gpsLat0 = 34.79;
-      gpsLong0 = -86.78;
-      gpsLatLong(gpsLat0, latDeg, gpsLong0, lonDeg);
+      float lat = GPS.latitude;
+      float lon = GPS.longitude;
+      here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
+      range = (haversine(string2lat(here), string2lon(here), string2lat(there), string2lon(there)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
+      rangeft = range*5280;                  // convert the range to feet
 
-      alt = GPS.altitude;
-      Serial.println(lat);
-      Serial.println(lon);
-      float distLat = abs(gpsLat0 - gpsLat) * 111194.9;
-      float distLong = 111194.9 * abs(gpsLong0 - gpsLong) * cos(radians((gpsLat0 + gpsLat) / 2));
-      float distance = sqrt(pow(distLat, 2) + pow(distLong, 2));
-         imuval[4] = lat;
-         imuval[5] = lon;
-         imuval[6] = distance;
+      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(there), string2lon(there)));  // Determins the angle in radians of the bearing to desired location
+      if (bearing < 3.14159 && bearing > 2.74889){ bearingletter = "S";}
+      if (bearing < 2.74889 && bearing > 1.96350){ bearingletter = "SW";}
+      if (bearing < 1.96350 && bearing > 1.17810){ bearingletter = "W";}
+      if (bearing < 1.17810 && bearing > 0.39270){ bearingletter = "NW";}
+      if (bearing < 0.39270 && bearing > -0.39270){ bearingletter = "N";}
+      if (bearing < -0.39270 && bearing > -1.17810){ bearingletter = "NE";}
+      if (bearing < -1.17810 && bearing > -1.96350){ bearingletter = "E";}
+      if (bearing < -1.96350 && bearing > -2.74889){ bearingletter = "SE";}
+      if (bearing < -2.74889 && bearing > -3.14159){ bearingletter = "S";}   
+Serial.println(range);
+    float rangeDisplay = range ;
+    float bearingDisplay = bearing * 100 ;
+    if(range < 1){
+      rangeDisplay = rangeft;
+    }if(bearingDisplay < 0){
+      bearingDisplay = bearingDisplay + 360;
+    }
+    Serial.println(GPS.angle);
+         imuval[4] = GPS.angle;
+         imuval[5] = bearingDisplay;
+         imuval[6] = rangeDisplay;
          setDigits(); 
     }
   }
@@ -642,10 +665,10 @@ void processkeytime(){
 }
 
 void compAct(){
-  int randNumb = random(10, 30); 
-  if ((randNumb == 15) || (randNumb == 25) || (randNumb == 5)) {lampit(0,150,0,3);}
+  int randNumb = random(10, 20); 
+  if ((randNumb == 15) || (randNumb == 20) || (randNumb == 5)) {lampit(0,150,0,3);}
   else {lampit(0,0,0,3);}
-  if ((randNumb == 17) || (randNumb == 25)) {lampit(90,90,90,17);}
+  if (randNumb == 17) {lampit(90,90,90,17);}
   else {lampit(0,0,0,17);}
 }
 
@@ -869,3 +892,70 @@ DateTime now = rtc.now();
           //STOP BUZZER
         }
     } 
+
+ String int2fw (int x, int n) {
+    // returns a string of length n (fixed-width)
+    String s = (String) x;
+    while (s.length() < n) {
+    s = "0" + s;
+    }
+    return s;
+    }
+     
+    String gps2string (String lat, float latitude, String lon, float longitude) {
+    // returns "Ndd mm.mmm, Wddd mm.mmm";
+    int dd = (int) latitude/100;
+    int mm = (int) latitude % 100;
+    int mmm = (int) round(1000 * (latitude - floor(latitude)));
+    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    dd = (int) longitude/100;
+    mm = (int) longitude % 100;
+    mmm = (int) round(1000 * (longitude - floor(longitude)));
+    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    String myString = gps2lat + ", " + gps2lon;
+    return myString;
+    };
+    /*
+    float string2radius (String myString) {
+    // returns a floating-point number: e.g. String myString = "Radius: 005.1 NM";
+    float r = ((myString.charAt(8) - '0') * 100.0) + ((myString.charAt(9) - '0') * 10.0) + ((myString.charAt(10) - '0') * 1.0) + ((myString.charAt(12) - '0') * 0.10);
+    return r;
+    };*/
+     
+    float string2lat (String myString) {
+    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
+    float lat = ((myString.charAt(1) - '0') * 10.0) + (myString.charAt(2) - '0') * 1.0 + ((myString.charAt(4) - '0') / 6.0) + ((myString.charAt(5) - '0') / 60.0) + ((myString.charAt(7) - '0') / 600.0) + ((myString.charAt(8) - '0') / 6000.0) + ((myString.charAt(9) - '0') / 60000.0);
+    //Serial.print("float lat: ");
+    //Serial.println(lat);
+    lat *= deg2rad;
+    if (myString.charAt(0) == 'S')
+    lat *= -1; // Correct for hemisphere
+    return lat;
+    };
+     
+    float string2lon (String myString) {
+    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
+    float lon = ((myString.charAt(13) - '0') * 100.0) + ((myString.charAt(14) - '0') * 10.0) + (myString.charAt(15) - '0') * 1.0 + ((myString.charAt(17) - '0') / 6.0) + ((myString.charAt(18) - '0') / 60.0) + ((myString.charAt(20) - '0') / 600.0) + ((myString.charAt(21) - '0') / 6000.0) + ((myString.charAt(22) - '0') / 60000.0);
+    //Serial.print("float lon: ");
+    //Serial.println(lon);
+    lon *= deg2rad;
+    if (myString.charAt(12) == 'W')
+    lon *= -1; // Correct for hemisphere
+    return lon;
+    };
+     
+    float haversine (float lat1, float lon1, float lat2, float lon2) {
+    // returns the great-circle distance between two points (radians) on a sphere
+    float h = sq((sin((lat1 - lat2) / 2.0))) + (cos(lat1) * cos(lat2) * sq((sin((lon1 - lon2) / 2.0))));
+    float d = 2.0 * rEarth * asin (sqrt(h));
+    //Serial.println(d);
+    return d;
+    };
+    
+    float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
+    // returns the great-circle initial bearing between two points (radians) on a sphere
+    float y = sin(lon1 - lon2) * cos(lat2);
+    float x = cos(lat1) * sin(lat2) - sin(lat1)*cos(lat2)*cos(lon1-lon2);
+    float b = atan2(y,x);
+    return b;
+    };
