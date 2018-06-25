@@ -2,23 +2,20 @@
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
 #include <math.h>
-SoftwareSerial mySerial(8, 9);
-  #define PIN            6
-  #define NUMPIXELS      18
-  Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-
-  Adafruit_GPS GPS(&mySerial); 
-  #define GPSECHO  false
-  boolean usingInterrupt = false;
-  void useInterrupt(boolean); // Func prototype keeps Arduino 0023 happy
-
-#include "LedControl.h"
-  LedControl lc=LedControl(12,10,11,4);
-
-#include "RTClib.h"
-RTC_DS1307 rtc;
-
 #include<Wire.h>
+#include "RTClib.h"
+#include "LedControl.h"
+
+#define PIN            6
+#define NUMPIXELS      18
+#define GPSECHO  false
+
+SoftwareSerial mySerial(8, 7);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_GPS GPS(&mySerial); 
+LedControl lc=LedControl(12,10,11,4);
+RTC_DS1307 rtc; 
+
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
 bool alarm = false;     
@@ -27,7 +24,6 @@ const float rEarth = 6371000.0; //can replace with 3958.75 mi, 6370.0 km, or 344
 float range = 123.45;    // distance from HERE to THERE
 int rangeft = 5300;
 float bearing = 100;
-String bearingletter;
 String here;             // read from GPS
 const int MPU_addr=0x68;  // I2C address of the MPU-6050
 long imuval[7];
@@ -35,7 +31,10 @@ byte digitval[7][7];
 byte keyVal = 20;
 byte oldkey = 20;
 bool fresh = 0;
+bool navActive = 0;
+
 byte action = 0;
+bool error = 0;
 byte currentaction = 0;
 byte verb = 0;
 byte verbnew[2];
@@ -51,43 +50,44 @@ byte mode = 0;
 byte oldmode = 0;
 bool toggle = 0;
 byte togcount = 0;
-bool error = 0;
 bool newAct = 0;
 byte audioTrack = 1;
 uint8_t alarmHours = 0, alarmMinutes = 0;  // Holds the current alarm time
+boolean usingInterrupt = false;
 
-float gpsLat0;
-float gpsLong0;
-float gpsLat;
-float gpsLong;
-float gpsBearing; //deg
-String there = "N34 47.337, W086 46.537"; //Home
+byte wpLatDD[2];
+byte wpLatDDNew[2];
+byte wpLatMM[5];
+byte wpLatMMNew[5];
+byte wpLonDD[2];
+byte wpLonDDNew[2];
+byte wpLpnMM[5];
+byte wpLonMMNew[5];
+float wpLatitude = 0;
+float wpLongitude = 0;
+String wpLat = "N";
+String wpLon = "W";
+String wpGPS = "N34 47.337, W86 46.537"; //Home
 
 void setup() {
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
-  pinMode(7, OUTPUT);
-  digitalWrite(7, LOW);
   randomSeed(analogRead(A7));
-pixels.begin();
-
-for(int index = 0; index < 4; index++){
+  pixels.begin();
+  for(int index = 0; index < 4; index++){
   lc.shutdown(index,false); 
   lc.setIntensity(index,15);
   lc.clearDisplay(index); 
   }
-  
- Wire.begin();
-      Wire.beginTransmission(MPU_addr);
-      Wire.write(0x6B);  // PWR_MGMT_1 register
-      Wire.write(1);     // set to zero (wakes up the MPU-6050)
-      Wire.endTransmission(true);
-
-rtc.begin();
-      
- Serial.begin(9600);
+  Wire.begin();
+  Wire.beginTransmission(MPU_addr);
+  Wire.write(0x6B);  // PWR_MGMT_1 register
+  Wire.write(1);     // set to zero (wakes up the MPU-6050)
+  Wire.endTransmission(true);
+  rtc.begin();    
+  Serial.begin(9600);
  //GPS
   GPS.begin(9600);
   GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
@@ -108,7 +108,7 @@ rtc.begin();
 //    lc.setChar(i,4,'-',false);
 //    lc.setChar(i,5,'-',false);
 //   }
-startUp();
+  //startUp();
  }
  
 SIGNAL(TIMER0_COMPA_vect) {
@@ -132,9 +132,9 @@ void useInterrupt(boolean v) {
 
 uint32_t timer = millis();
 void loop() {
- if (prog == 62){jfk(1);}
- if (prog == 70){jfk(3);}
- if (prog == 69){jfk(2);}  
+ if (prog == 62){ testMp3(); }
+ if (prog == 70){jfk(1);}
+ if (prog == 69){jfk(1);}  
  if (mode == 0) {mode0();}
  if (mode == 1) {mode1();}
  if (mode == 2) {mode2();}
@@ -196,6 +196,7 @@ void mode3() {//inputing the program
  keyVal = readkb();
  processkey3();
 }
+
 void startUp() {
   for (int index = 0; index < 4; index++){lampit(0,150,0, index);delay(50);}
   for (int index = 4; index < 18; index++) {if(index < 11){lampit(100,100,0, index);}if(index <= 12){lampit(100,100,100, 23-index);}delay(50);}
@@ -206,7 +207,7 @@ void startUp() {
       delay(25);
     }
   }
-  delay(2000);
+  delay(1000);
   for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
   for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
   for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
@@ -254,7 +255,6 @@ void mode4() {
 
 
 void action1() {
- readimu_xyz(); 
 }
 
 void action2() { // Reads Time from RTC
@@ -303,7 +303,6 @@ void action4() { // IMU XYZ Delta
 }
 
 void action5() { // Sets Time To RTC
-   
 DateTime now = rtc.now();
   int NYR = now.year();
   int NMO = now.month();
@@ -312,7 +311,6 @@ DateTime now = rtc.now();
   int NMI = now.minute();
   int NSE = now.second();
   while(keyVal == 15){ keyVal = readkb();}
-  
   while(keyVal != 15){
     Serial.println(keyVal);
    keyVal = readkb();
@@ -361,11 +359,16 @@ DateTime now = rtc.now();
    lc.clearDisplay(3);
    delay(50);  
   }
- rtc.adjust(DateTime(NYR,NMO,NDY,NHR , NMI , NSE));
- action = 2; setdigits(0, 0, 1);setdigits(0, 1, 6);verbold[0] = 1; verbold[1] = 6; verb = 16; 
+ rtc.adjust(DateTime(NYR,NMO,NDY,NHR,NMI,NSE));
+ action = 2; 
+ setdigits(0, 0, 1);
+ setdigits(0, 1, 6);
+ verbold[0] = 1; 
+ verbold[1] = 6; 
+ verb = 16; 
 }
 
-void action6(){
+void action6(){ //Set Date
    byte setyear[4];
    byte setmonth[2];
    byte setday[2];
@@ -384,93 +387,195 @@ DateTime now = rtc.now();
 }
 
 void action7(){     //Read GPS VEL & ALT
-  lampit(0,0,0, 16);
-  lampit(0,0,0, 15);
+ if(navActive == 0){
+  lc.setRow(1,0,B00000000);
+  lc.setRow(1,1,B00000000);
+  lc.setRow(1,5,B00000000);
+  lc.setRow(2,0,B00000000);
+  lc.setRow(2,3,B00000000);
+  lc.setRow(2,4,B00000000);
+  lc.setRow(2,5,B00000000);
+  lc.setRow(3,0,B00000000);
+ while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+  lc.setRow(1,2,B00001110);//L
+  lc.setRow(1,3,B01110111);//A
+  lc.setRow(1,4,B00001111);//t
 
-  if (!GPS.fix) {
-   lampit(255,0,0, 16);
-   lampit(255,200,59, 15);
-   for(int i=1;i<4;i++) {
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+     if(keyVal == 12){
+          lc.setRow(2,0,B01110100);
+          wpLat = "N";
+        }
+        if(keyVal == 13){
+          lc.setRow(2,0,B00100100);
+          wpLat = "S";
+        }
+      if((keyVal < 10) && (count < 2)) {
+          wpLatDDNew[count] = keyVal;
+          setdigits(2, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(2);
+        count = 0;
+      }
+   }
+ }
+int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
+while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+      if((keyVal < 10) && (count < 5)) {
+          wpLatMMNew[count] = keyVal;
+          setdigits(3, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(3);
+        count = 0;
+      }
+   }
+  }
+int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
+wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
+        lc.clearDisplay(1);
+        lc.clearDisplay(2);
+        lc.clearDisplay(3);
+        lc.setRow(1,2,B00001110); //L
+        lc.setRow(1,3,B01111110);// O
+        lc.setRow(1,4,B01110110);//N
+ while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+     if(keyVal == 12){
+          lc.setRow(2,0,B01110100);
+          wpLon = "W";
+        }
+        if(keyVal == 13){
+          lc.setRow(2,0,B00100100);
+          wpLon = "E";
+        }
+      if((keyVal < 10) && (count < 2)) {
+          wpLonDDNew[count] = keyVal;
+          setdigits(2, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(2);
+        count = 0;
+      }
+   }
+ }
+ 
+int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
+while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+      if((keyVal < 10) && (count < 5)) {
+          wpLonMMNew[count] = keyVal;
+          setdigits(3, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(3);
+        lc.clearDisplay(3);
+        count = 0;
+      }
+   }
+  }
+int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
+wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
+navActive = 1;
+for(int i=2;i<4;i++) {
     lc.setRow(i,0,B00100100);
     lc.setChar(i,1,'-',false);
     lc.setChar(i,2,'-',false);
     lc.setChar(i,3,'-',false);
     lc.setChar(i,4,'-',false);
     lc.setChar(i,5,'-',false);
-   }
- 
+    setDigits(); 
+    }
+ }
+    executeNav(wpLat, wpLatitude, wpLon, wpLongitude);
+}
+
+
+void executeNav(String inputlat, float inputlatitude, String inputlon, float inputlongitude){ 
+  if (!GPS.fix) {
+   lampit(255,0,0, 16);
+   lampit(255,200,59, 15);
+   
   }
-  int currentTime = 0;
-  int speedKnots = 0;
-  int lat = 0;
-  int lon = 0;
-  int alt = 0;
-  byte data[83];
-  int index = 0;
-   char c = GPS.read();
-    if (GPSECHO)
-      if (c) Serial.print(c);
-  if (GPS.newNMEAreceived()) {
+ if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
       return;  // we can fail to parse a sentence in which case we should just wait for another
-  } 
+  }
   if (timer > millis())  timer = millis();
-  if (millis() - timer > 1000) { 
+  if (millis() - timer > 2000) { 
     timer = millis(); // reset the timer
     if (GPS.fix) {
-     compAct(); 
-     currentTime = GPS.latitudeDegrees;
-     data[index] = Serial.read();
-     delayMicroseconds(960);
-     index++;
-     if(index >= 72) {index = 71; }
-      speedKnots = GPS.speed;
-      float latDeg = GPS.latitudeDegrees;
-      float lonDeg = GPS.longitudeDegrees;
-      float lat = GPS.latitude;
-      float lon = GPS.longitude;
+       compAct(); 
+      lampit(0,0,0, 16);
+      lampit(0,0,0, 15);
+      lampit(0,150,0, 9);
+      lampit(0,150,0, 10);
+      wpGPS = input2string ((String) inputlat, inputlatitude, (String) inputlon, inputlongitude);
       here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
-      range = (haversine(string2lat(here), string2lon(here), string2lat(there), string2lon(there)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
+      range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
       rangeft = range*5280;                  // convert the range to feet
-
-      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(there), string2lon(there)));  // Determins the angle in radians of the bearing to desired location
-      if (bearing < 3.14159 && bearing > 2.74889){ bearingletter = "S";}
-      if (bearing < 2.74889 && bearing > 1.96350){ bearingletter = "SW";}
-      if (bearing < 1.96350 && bearing > 1.17810){ bearingletter = "W";}
-      if (bearing < 1.17810 && bearing > 0.39270){ bearingletter = "NW";}
-      if (bearing < 0.39270 && bearing > -0.39270){ bearingletter = "N";}
-      if (bearing < -0.39270 && bearing > -1.17810){ bearingletter = "NE";}
-      if (bearing < -1.17810 && bearing > -1.96350){ bearingletter = "E";}
-      if (bearing < -1.96350 && bearing > -2.74889){ bearingletter = "SE";}
-      if (bearing < -2.74889 && bearing > -3.14159){ bearingletter = "S";}   
-Serial.println(range);
-    float rangeDisplay = range ;
-    float bearingDisplay = bearing * 100 ;
-    if(range < 1){
-      rangeDisplay = rangeft;
-    }if(bearingDisplay < 0){
-      bearingDisplay = bearingDisplay + 360;
-    }
-    Serial.println(GPS.angle);
-         imuval[4] = GPS.angle;
-         imuval[5] = bearingDisplay;
-         imuval[6] = rangeDisplay;
-         setDigits(); 
+      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)));  // Determins the angle in radians of the bearing to desired location
+      float rangeDisplay = range;
+      float bearingDisplay = bearing * 100 ;
+      if(range < 1){
+        rangeDisplay = rangeft;
+      }
+      if(bearingDisplay < 0){
+        bearingDisplay = bearingDisplay + 359;
+      }
+       if(bearingDisplay == 0){
+        bearingDisplay = 360;
+      }
+  delay(20);
+      imuval[4] = GPS.angle;
+      imuval[5] = bearingDisplay;
+      imuval[6] = rangeDisplay;
+      setDigits(); 
     }
   }
 }
 
 void action8() { // T-Minus countdown timer
 DateTime now = rtc.now();
-  int NYR = 0;
-  int NMO = 0;
-  int NDY = 0;
   int NHR = 0;
   int NMI = 0;
   int NSE = 0;
   unsigned long currentMillis = millis();
   while(keyVal == 15){ keyVal = readkb();}
-  
   while(keyVal != 15){
    keyVal = readkb();
    if(keyVal != oldkey) {
@@ -495,7 +600,6 @@ DateTime now = rtc.now();
       }
     }
   }
-  
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
    keyVal = readkb();
@@ -520,8 +624,7 @@ DateTime now = rtc.now();
         setDigits();
       } 
     }
-    }
-    
+  } 
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
    keyVal = readkb();
@@ -550,12 +653,6 @@ DateTime now = rtc.now();
  startCountdown(NHR , NMI , NSE);
 }
 
-
-void gpsLatLong(int lat1, int lat2, int long1, int long2)
-{
-  gpsLat = int(lat1 / 100) + (lat1 % 100) / 60.0 + float(lat2) / 10000.0 / 60.0;
-  gpsLong = int(long1 / 100) + (long1 % 100) / 60.0 + float(long2) / 10000.0 / 60.0;
-}
 void mode11() {
  compAct(); 
 }
@@ -589,20 +686,16 @@ int value_row3 = analogRead(A2);
 }
 
 void processkey0() {
-  
   if(keyVal != oldkey) { fresh = 1; oldkey = keyVal; }
-  
   if((keyVal == 10) && (fresh == 1)){mode = 1; fresh = 0; byte keeper = verb; 
   for(int index = 0; keeper >= 10; keeper = (keeper - 10)) { index ++; verbold[0] = index; }
   for(int index = 0;keeper >= 1; keeper = (keeper - 1)) { index ++; verbold[1] = index; }}//verb
-   
   if((keyVal == 11) && (fresh == 1)){mode = 2;fresh = 0; byte keeper = noun;
   for(int index = 0; keeper >= 10; keeper = (keeper - 10)) { index ++; nounold[0] = index; }
   for(int index = 0;keeper >= 1; keeper = (keeper - 1)) { index ++; nounold[1] = index; }}//noun
-  
   if((keyVal == 14) && (fresh == 1)){mode = 3; fresh = 0;}//program
   if((keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
-   }
+}
 
 void processkey1() {
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
@@ -612,11 +705,9 @@ void processkey1() {
   verb = ((verbnew[0] * 10) + (verbnew[1]));
   if((verb != 16) && (verb != 21) && (verb != 35) && (verb != 0)) {error = 1;verb = ((verbold[0] * 10) + verbold[1]);}
   else {
-    
     lampit(0,0,0, 13);
     mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
-  
   if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 2);count = 0; fresh = 0;
   if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);} else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}}//verb 
   if((keyVal == 11) && (fresh == 1)){mode = 2;lampit(0,0,0, 2);count = 0; fresh = 0;}//noun
@@ -624,6 +715,7 @@ void processkey1() {
   if((keyVal < 10)&&(count < 2)) { verbnew[count] = keyVal;setdigits(0, count, keyVal);count++;fresh = 0;}
 }
 }
+
 void processkey2() {
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
@@ -634,17 +726,15 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
     lampit(0,0,0, 13);
     mode = 0;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0; error = 0; newAct = 1;
   }}
-  
- 
   if((keyVal == 16) && (fresh == 1)){mode = oldmode;lampit(0,0,0, 14);lampit(0,0,0, 0);count = 0; fresh = 0;
   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);} else{setdigits(0, 4,nounold[0]);setdigits(0, 5,nounold[1]);}}//verb 
   if((keyVal == 10) && (fresh == 1)){mode = 1;lampit(0,0,0, 0);count = 0; fresh = 0;}//verb
   if((keyVal == 14) && (fresh == 1)){mode = 3;lampit(0,0,0, 0);count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) {nounnew[count] = keyVal;setdigits(0, (count + 4), keyVal);count++;}
   if(verb == 16 && noun == 87) {prog = 11; setdigits(0, 2, 1);setdigits(0, 3, 1);} 
+}
+}
 
-}
-}
 void processkey3() {
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {prog = ((prognew[0] * 10) + (prognew[1]));fresh = 0;
@@ -660,13 +750,9 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
   if((keyVal < 10)&&(count < 2)) {prognew[count] = keyVal;setdigits(0, (count + 2), keyVal);count++;}
 }
 
-void processkeytime(){
-  
-}
-
 void compAct(){
-  int randNumb = random(10, 20); 
-  if ((randNumb == 15) || (randNumb == 20) || (randNumb == 5)) {lampit(0,150,0,3);}
+  int randNumb = random(10, 2000); 
+  if ((randNumb == 15) || (randNumb == 20)) {lampit(0,150,0,3);}
   else {lampit(0,0,0,3);}
   if (randNumb == 17) {lampit(90,90,90,17);}
   else {lampit(0,0,0,17);}
@@ -696,8 +782,7 @@ void flasher() {
 void validateAct(){
  if(verb == 35) {mode = 4; newAct = 0;}// Lamp Test
  else if((verb == 16) && (noun == 17)) {action = 1;newAct = 0;}//Display IMU XYZ
-  else if((verb == 16) && (noun == 87)) {action = 4;newAct = 0;}//Display IMU Delta
-
+ else if((verb == 16) && (noun == 87)) {action = 4;newAct = 0;}//Display IMU Delta
  else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time 
  else if((verb == 16) && (noun == 43)) {action = 3;newAct = 0;count = 0;}//Display current GPS
  else if((verb == 16) && (noun == 68)) {action = 4;newAct = 0;}//Display Range With 1202 ERROR
@@ -706,10 +791,6 @@ void validateAct(){
  else if((verb == 16) && (noun == 46)) {action = 7;newAct = 0;count = 0;}//Display current ALT and Speed
  else if((verb == 16) && (noun == 33)) {action = 8;newAct = 0; prog = 11; count = 0;}//Countdown Timer
  else if(prog == 11) {action = 8;newAct = 0; verb = 16; noun = 33;}
-
-
- 
- 
  else{newAct = 0;action = 0;}
 }
 void readimu(){
@@ -733,17 +814,6 @@ void readimu(){
       Serial.print(" | GyY = "); Serial.print(imuval[5]);
       Serial.print(" | GyZ = "); Serial.println(imuval[6]);
       
-    setDigits();      
- }
-void readimu_xyz(){
-  compAct();
-      Wire.beginTransmission(MPU_addr);
-      Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
-      imuval[4]=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
-      imuval[5]=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
-      imuval[6]=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
     setDigits();      
  }
 
@@ -801,7 +871,7 @@ void readimu_xyz(){
       for (int index = 0; index < 7; index++) {
         digitval[indexa][index]=0;      
       }
-      }
+     }
  for (int indexa = 0; indexa < 7; indexa ++){
   if (imuval[indexa] < 0) {imuval[indexa] = (imuval[indexa] - (imuval[indexa] + imuval[indexa])); digitval[indexa][0] = 1;}
   else {digitval[indexa][0] = 0;}
@@ -825,11 +895,29 @@ void readimu_xyz(){
  } 
  }
  }
+
+void testMp3(){
+  pinMode(9, OUTPUT);
+  digitalWrite(9, HIGH);
+  delay(1000);
+  digitalWrite(9, LOW);
+  delay(100);
+  digitalWrite(9, HIGH);
+  while(keyVal == 15){ keyVal = readkb();}
+  while(keyVal != 15){
+   keyVal = readkb();
+   if (keyVal == 17){
+      digitalWrite(9, LOW);
+      pinMode(9, INPUT);
+      prog = 0;
+    }
+  }
+}
  
  void jfk(byte jfk){
  if(audioTrack > 3) {audioTrack = 1;} 
   while(audioTrack != jfk){
-     pinMode(9, OUTPUT);
+    pinMode(9, OUTPUT);
     delay(100);
     pinMode(9, INPUT);
     delay(100);
@@ -901,12 +989,13 @@ DateTime now = rtc.now();
     }
     return s;
     }
-     
+//Input DDDD.MMMM
     String gps2string (String lat, float latitude, String lon, float longitude) {
+    // lattitude = 4021.6393
     // returns "Ndd mm.mmm, Wddd mm.mmm";
-    int dd = (int) latitude/100;
-    int mm = (int) latitude % 100;
-    int mmm = (int) round(1000 * (latitude - floor(latitude)));
+    int dd = (int) latitude/100; // 40
+    int mm = (int) latitude % 100; // 21
+    int mmm = (int) round(1000 * (latitude - floor(latitude)));//639
     String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
     dd = (int) longitude/100;
     mm = (int) longitude % 100;
@@ -915,12 +1004,22 @@ DateTime now = rtc.now();
     String myString = gps2lat + ", " + gps2lon;
     return myString;
     };
-    /*
-    float string2radius (String myString) {
-    // returns a floating-point number: e.g. String myString = "Radius: 005.1 NM";
-    float r = ((myString.charAt(8) - '0') * 100.0) + ((myString.charAt(9) - '0') * 10.0) + ((myString.charAt(10) - '0') * 1.0) + ((myString.charAt(12) - '0') * 0.10);
-    return r;
-    };*/
+
+//Input -> DD.MMmmm
+    String input2string (String lat, float latitude, String lon, float longitude) {
+    // lattitude = 40.36065
+    // returns "Ndd mm.mmm, Wddd mm.mmm";
+    int dd = (int) floor(latitude);
+    int mm = ((float) latitude - floor(latitude)) * 60; // 21
+    int mmm = ((((float) latitude - floor(latitude)) * 60) - mm) * 1000; //639
+    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    dd = (int) floor(longitude);
+    mm = ((float) latitude - floor(longitude)) * 60; // 21
+    mmm = ((((float) longitude - floor(longitude)) * 60) - mm) * 1000; //639
+    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    String myString = gps2lat + ", " + gps2lon;
+    return myString;
+    };
      
     float string2lat (String myString) {
     // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
