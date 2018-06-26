@@ -18,7 +18,6 @@ RTC_DS1307 rtc;
 
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
-bool alarm = false;     
 const float deg2rad = 0.01745329251994;
 const float rEarth = 6371000.0; //can replace with 3958.75 mi, 6370.0 km, or 3440.06 NM
 float range = 123.45;    // distance from HERE to THERE
@@ -52,16 +51,11 @@ bool toggle = 0;
 byte togcount = 0;
 bool newAct = 0;
 byte audioTrack = 1;
-uint8_t alarmHours = 0, alarmMinutes = 0;  // Holds the current alarm time
 boolean usingInterrupt = false;
 
-byte wpLatDD[2];
 byte wpLatDDNew[2];
-byte wpLatMM[5];
 byte wpLatMMNew[5];
-byte wpLonDD[2];
 byte wpLonDDNew[2];
-byte wpLpnMM[5];
 byte wpLonMMNew[5];
 float wpLatitude = 0;
 float wpLongitude = 0;
@@ -90,9 +84,7 @@ void setup() {
   Serial.begin(9600);
  //GPS
   GPS.begin(9600);
-  GPS.sendCommand(PMTK_SET_NMEA_OUTPUT_RMCGGA);
-  GPS.sendCommand(PMTK_SET_NMEA_UPDATE_1HZ);   // 1 Hz update rate
-  GPS.sendCommand(PGCMD_ANTENNA);
+
   useInterrupt(true);
   delay(1000);
   mySerial.println(PMTK_Q_RELEASE);
@@ -155,7 +147,7 @@ void loop() {
  if(action == 5) {action5();} // V21N36 Set The Time
  if(action == 6) {action6();} // V21N37 Set The Date
  if(action == 7) {action7();} // V16N46 GPS VEL & ALT
- if(action == 8) {action8();} // V16N33 SET COUNTDOWN
+// if(action == 8) {action8();} // V16N33 SET COUNTDOWN
 
  Serial.print(verb);
  Serial.print("  ");
@@ -521,16 +513,16 @@ for(int i=2;i<4;i++) {
     setDigits(); 
     }
  }
-    executeNav(wpLat, wpLatitude, wpLon, wpLongitude);
+    executeNav();
 }
 
 
-void executeNav(String inputlat, float inputlatitude, String inputlon, float inputlongitude){ 
+void executeNav(){ 
   if (!GPS.fix) {
    lampit(255,0,0, 16);
    lampit(255,200,59, 15);
-   
   }
+  Serial.println(wpLat + "" + wpLatitude + " " + wpLon + wpLongitude);
  if (GPS.newNMEAreceived()) {
     if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
       return;  // we can fail to parse a sentence in which case we should just wait for another
@@ -544,7 +536,7 @@ void executeNav(String inputlat, float inputlatitude, String inputlon, float inp
       lampit(0,0,0, 15);
       lampit(0,150,0, 9);
       lampit(0,150,0, 10);
-      wpGPS = input2string ((String) inputlat, inputlatitude, (String) inputlon, inputlongitude);
+      wpGPS = input2string (wpLat, wpLatitude, wpLon, wpLongitude);
       here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
       range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
       rangeft = range*5280;                  // convert the range to feet
@@ -569,89 +561,89 @@ void executeNav(String inputlat, float inputlatitude, String inputlon, float inp
   }
 }
 
-void action8() { // T-Minus countdown timer
-DateTime now = rtc.now();
-  int NHR = 0;
-  int NMI = 0;
-  int NSE = 0;
-  unsigned long currentMillis = millis();
-  while(keyVal == 15){ keyVal = readkb();}
-  while(keyVal != 15){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-     oldkey = keyVal;
-     if(keyVal == 12) {NHR++;}
-     if(keyVal == 13) {NHR--;}
-     if( NHR > 23) {NHR = 0;}
-     if(NHR < 0) {NHR = 23;}
-   }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-   if (timer > millis())  timer = millis();
-      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-        timer = millis(); // reset the timer
-      // if the LED is off turn it on and vice-versa:
-      if (displayOn) {      // this makes Pin2 blinks off-on
-        lc.clearDisplay(1);
-        displayOn = false;
-        } 
-      else {
-        displayOn = true;
-        setDigits();
-      }
-    }
-  }
-  while(keyVal == 15){ keyVal = readkb();}
-  while(keyVal != 15){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-    oldkey = keyVal;
-   if(keyVal == 12) {NMI++;}
-   if(keyVal == 13) {NMI--;}
-   if( NMI > 59) {NMI = 0;}
-   if(NMI < 0) {NMI = 59;} 
-   }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
- if (timer > millis())  timer = millis();
-      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-        timer = millis(); // reset the timer
-      // if the LED is off turn it on and vice-versa:
-      if (displayOn) {      // this makes Pin2 blinks off-on
-        lc.clearDisplay(2);
-        displayOn = false;
-        } 
-      else {
-        displayOn = true;
-        setDigits();
-      } 
-    }
-  } 
-  while(keyVal == 15){ keyVal = readkb();}
-  while(keyVal != 15){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-    oldkey = keyVal;
-   if(keyVal == 12) {NSE++;}
-   if(keyVal == 13) {NSE--;} 
-   if( NSE > 59) {NSE = 0;}
-   if(NSE < 0) {NSE = 59;}
-   }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-   if (timer > millis())  timer = millis();
-      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-        timer = millis(); // reset the timer
-      // if the LED is off turn it on and vice-versa:
-      if (displayOn) {      // this makes Pin2 blinks off-on
-        lc.clearDisplay(3);
-        displayOn = false;
-        } 
-      else {
-        displayOn = true;
-        setDigits();
-      }
-    }
-  }
- startCountdown(NHR , NMI , NSE);
-}
+//void action8() { // T-Minus countdown timer
+//DateTime now = rtc.now();
+//  int NHR = 0;
+//  int NMI = 0;
+//  int NSE = 0;
+//  unsigned long currentMillis = millis();
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12) {NHR++;}
+//     if(keyVal == 13) {NHR--;}
+//     if( NHR > 23) {NHR = 0;}
+//     if(NHR < 0) {NHR = 23;}
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+//   if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(1);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      }
+//    }
+//  }
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//    oldkey = keyVal;
+//   if(keyVal == 12) {NMI++;}
+//   if(keyVal == 13) {NMI--;}
+//   if( NMI > 59) {NMI = 0;}
+//   if(NMI < 0) {NMI = 59;} 
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+// if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(2);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      } 
+//    }
+//  } 
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//    oldkey = keyVal;
+//   if(keyVal == 12) {NSE++;}
+//   if(keyVal == 13) {NSE--;} 
+//   if( NSE > 59) {NSE = 0;}
+//   if(NSE < 0) {NSE = 59;}
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+//   if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(3);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      }
+//    }
+//  }
+// startCountdown(NHR , NMI , NSE);
+//}
 
 void mode11() {
  compAct(); 
@@ -824,11 +816,10 @@ void readimu(){
       Wire.endTransmission(false);
       Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
        int randNumb = random(10, 700); 
-        if (randNumb == 121 || randNumb == 677 || alarm) {
+        if (randNumb == 121 || randNumb == 677) {
           lampit(100,100,0,6);
           lampit(0,0,0,3);
           lampit(0,0,0,17);
-          alarm = true;
               keyVal = readkb();
               imuval[4]= 1202;
               imuval[5]= 1202;
@@ -852,12 +843,10 @@ void readimu(){
                 lc.setRow(4,i,B00000000); 
               }
             oldkey = keyVal;              
-            alarm = false;
            }
          }
         }
         else {
-          alarm = false;
           lampit(0,0,0,6);
           imuval[4]=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
           imuval[5]=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
@@ -931,55 +920,44 @@ void testMp3(){
     prog = 0;
   }
 
-void startCountdown(int HOURS, int MINUTES, int SECONDS){
- action = 8; setdigits(0, 0, 1);setdigits(0, 1, 6);setdigits(0, 4, 3);setdigits(0, 5, 3);verbold[0] = 1; verbold[1] = 6; verb = 16; noun = 33; nounold[0] = 3; nounold[1] = 3; 
- int totalSeconds = (HOURS * 60) * 60 + (MINUTES * 60) + SECONDS;
-  imuval[4] = HOURS;
-  imuval[5] = MINUTES;
-  imuval[6] = SECONDS;
-    compAct();  
- 
- for(int i = 0; i < totalSeconds;){ 
- keyVal = 15;
-   oldkey = readkb();
-   if (oldkey != keyVal){
+//void startCountdown(int HOURS, int MINUTES, int SECONDS){
+// action = 8; setdigits(0, 0, 1);setdigits(0, 1, 6);setdigits(0, 4, 3);setdigits(0, 5, 3);verbold[0] = 1; verbold[1] = 6; verb = 16; noun = 33; nounold[0] = 3; nounold[1] = 3; 
+// int totalSeconds = (HOURS * 60) * 60 + (MINUTES * 60) + SECONDS;
+//  imuval[4] = HOURS;
+//  imuval[5] = MINUTES;
+//  imuval[6] = SECONDS;
+//    compAct();  
+// 
+// for(int i = 0; i < totalSeconds;){ 
+// keyVal = 15;
+//   oldkey = readkb();
+//   if (oldkey != keyVal){
+//
+//    if (timer > millis())  timer = millis();
+//      if (millis() - timer > 1000) { 
+//        compAct();  
+//        timer = millis(); // reset the timer
+//        if(SECONDS < 1 && MINUTES > 0){
+//          SECONDS = 59;
+//          MINUTES--;
+//        }
+//        if(MINUTES < 1 && HOURS > 0){
+//          MINUTES = 59;
+//          HOURS --;
+//        }
+//        imuval[4] = - HOURS;
+//        imuval[5] = - MINUTES;
+//        imuval[6] = - SECONDS;
+//        i++;
+//        SECONDS--;
+//        setDigits();  
+//       }    
+//  }
+//    //ACTIVATE BUZZER
+// }
+//}
+//
 
-    if (timer > millis())  timer = millis();
-      if (millis() - timer > 1000) { 
-        compAct();  
-        timer = millis(); // reset the timer
-        if(SECONDS < 1 && MINUTES > 0){
-          SECONDS = 59;
-          MINUTES--;
-        }
-        if(MINUTES < 1 && HOURS > 0){
-          MINUTES = 59;
-          HOURS --;
-        }
-        imuval[4] = - HOURS;
-        imuval[5] = - MINUTES;
-        imuval[6] = - SECONDS;
-        i++;
-        SECONDS--;
-        setDigits();  
-       }    
-  }
-    //ACTIVATE BUZZER
- }
-}
-
-void WakeUpAlarm(){
-DateTime now = rtc.now();
-     if ( now.hour() == alarmHours && now.minute() == alarmMinutes )
-        {
-         DateTime now = rtc.now();
-        //ACTIVATE BUZZER
-          Serial.println("WAKE UP!");
-        }
-    else{
-          //STOP BUZZER
-        }
-    } 
 
  String int2fw (int x, int n) {
     // returns a string of length n (fixed-width)
