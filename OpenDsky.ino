@@ -1,18 +1,16 @@
 #include <Adafruit_NeoPixel.h>
-#include <Adafruit_GPS.h>
-#include <SoftwareSerial.h>
 #include <math.h>
 #include<Wire.h>
 #include "RTClib.h"
 #include "LedControl.h"
 
 #define PIN            6
+#define RELAY_PIN      7
+#define BUZZER_PIN      8
 #define NUMPIXELS      18
 #define GPSECHO  false
 
-SoftwareSerial mySerial(8, 7);
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
-Adafruit_GPS GPS(&mySerial); 
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 
@@ -24,7 +22,7 @@ float range = 123.45;    // distance from HERE to THERE
 int rangeft = 5300;
 float bearing = 100;
 String here;             // read from GPS
-const int MPU_addr=0x68;  // I2C address of the MPU-6050
+const int MPU_addr=0x69;  // I2C address of the MPU-6050
 long imuval[7];
 byte digitval[7][7];   
 byte keyVal = 20;
@@ -68,6 +66,12 @@ void setup() {
   pinMode(A1, INPUT);
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+  digitalWrite(RELAY_PIN, HIGH);  
+  pinMode(BUZZER_PIN, OUTPUT);
+  digitalWrite(BUZZER_PIN, HIGH);
+  pinMode(9, OUTPUT);
+  digitalWrite(9,HIGH);
   randomSeed(analogRead(A7));
   pixels.begin();
   for(int index = 0; index < 4; index++){
@@ -82,13 +86,6 @@ void setup() {
   Wire.endTransmission(true);
   rtc.begin();    
   Serial.begin(9600);
- //GPS
-  GPS.begin(9600);
-
-  useInterrupt(true);
-  delay(1000);
-  mySerial.println(PMTK_Q_RELEASE);
- //END GPS
 //    lampit(0,255,0, 0);
 //    lampit(0,255,0, 1);
 //    lampit(0,255,0, 2);
@@ -102,25 +99,6 @@ void setup() {
 //   }
   //startUp();
  }
- 
-SIGNAL(TIMER0_COMPA_vect) {
-  char c = GPS.read();
-#ifdef UDR0
-  if (GPSECHO)
-    if (c) UDR0 = c;  
-#endif
-}
-
-void useInterrupt(boolean v) {
-  if (v) {
-    OCR0A = 0xAF;
-    TIMSK0 |= _BV(OCIE0A);
-    usingInterrupt = true;
-  } else {
-    TIMSK0 &= ~_BV(OCIE0A);
-    usingInterrupt = false;
-  }
-}
 
 uint32_t timer = millis();
 void loop() {
@@ -257,37 +235,86 @@ void action2() { // Reads Time from RTC
    setDigits();  
 }
 
-void action3(){     //Read GPS POS & ALT
+//void action3(){     //Read GPS POS & ALT
+//  digitalWrite(RELAY_PIN, LOW);
+//  delay(20);
+//  useInterrupt(true);
+//  delay(1000);
+//  Serial.println(PMTK_Q_RELEASE);
+//  int lat = 0;
+//  int lon = 0;
+//  int alt = 0;
+//  delay(20);
+//  byte data[83];
+//  int index = 0;
+//  if (GPS.newNMEAreceived()) {
+//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+//      return;  // we can fail to parse a sentence in which case we should just wait for another
+//  } 
+//  if (timer > millis())  timer = millis();
+//  if (millis() - timer > 1000) { 
+//    timer = millis(); // reset the timer
+//    if (GPS.fix) {
+//      data[index] = GPS.read();
+//      delayMicroseconds(960);
+//      index++;
+//      if(index >= 72) {index = 71; }
+//      lat = GPS.latitude;
+//      lon = GPS.longitude;
+//      alt = GPS.altitude;
+//      imuval[4] = lat;
+//      imuval[5] = lon;
+//      imuval[6] = alt;
+//      digitalWrite(RELAY_PIN, HIGH);
+//      setDigits();  
+//    }
+//  }
+//}
+
+//$GPGGA,033410.000,2232.1745,N,11401.1920,E,1,07,1.1,107.14,M,0.00,M,,*64
+void action3(){     //Read GPS
+  digitalWrite(RELAY_PIN,LOW);
+  delay(20);
+  byte data[83];
+  Serial.write("$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
+  delay(20);
+  Serial.write("$PMTK220,1000*1F");
+  delay(20);
+  Serial.write("$PMTK300,1000,0,0,0,0*1C");
+  delay(20);
+  while((Serial.available()) > 0) {int x =  Serial.read(); }
+  while((Serial.available()) < 1) {int x = 1; }
+  delay(6);
+  int index = 0;
+  while(Serial.available() > 0){
+  data[index] = Serial.read();
+  delayMicroseconds(960);
+  index++;
+  if(index >= 72) {index = 71; }
+  }
   int lat = 0;
   int lon = 0;
   int alt = 0;
-  delay(20);
-  byte data[83];
-  int index = 0;
-   char c = GPS.read();
-    if (GPSECHO)
-      if (c) Serial.print(c);
-  if (GPS.newNMEAreceived()) {
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-      return;  // we can fail to parse a sentence in which case we should just wait for another
-  } 
-  if (timer > millis())  timer = millis();
-  if (millis() - timer > 1000) { 
-    timer = millis(); // reset the timer
-    if (GPS.fix) {
-      data[index] = GPS.read();
-      delayMicroseconds(960);
-      index++;
-      if(index >= 72) {index = 71; }
-      lat = GPS.latitude;
-      lon = GPS.longitude;
-      alt = GPS.altitude;
-      imuval[4] = lat;
-      imuval[5] = lon;
-      imuval[6] = alt;
-      setDigits();  
-    }
+  if (count < 10){
+    count++;
+ lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
+ lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
+ alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
   }
+  else {
+    count++;
+ lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
+ lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
+ alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+  }
+  if (count > 25) {count = 0;}
+ if (data[28] != 78) {lat = ((lat - (lat + lat)));}
+ if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
+   imuval[4] = lat;
+   imuval[5] = lon;
+   imuval[6] = alt;
+   digitalWrite(RELAY_PIN,LOW);
+   setDigits();  
 }
 
 void action4() { // IMU XYZ Delta
@@ -378,188 +405,236 @@ DateTime now = rtc.now();
  rtc.adjust(DateTime(((setyear[0] * 1000) + (setyear[1] * 100) + (setyear[2] * 10) + (setyear[3])), ((setmonth[0] * 10) + (setmonth[1])),((setday[0] * 10) + (setday[1])), NHR,NMI,NSE)); 
 }
 
-void action7(){     //Read GPS VEL & ALT
- if(navActive == 0){
-  lc.setRow(1,0,B00000000);
-  lc.setRow(1,1,B00000000);
-  lc.setRow(1,5,B00000000);
-  lc.setRow(2,0,B00000000);
-  lc.setRow(2,3,B00000000);
-  lc.setRow(2,4,B00000000);
-  lc.setRow(2,5,B00000000);
-  lc.setRow(3,0,B00000000);
- while(keyVal == 15){ keyVal = readkb();}
- count = 0; fresh = 0;
-  while(keyVal != 15 && fresh == 0){
-  lc.setRow(1,2,B00001110);//L
-  lc.setRow(1,3,B01110111);//A
-  lc.setRow(1,4,B00001111);//t
+//void action7(){     //Read GPS VEL & ALT
+// if(navActive == 0){
+//  lc.setRow(1,0,B00000000);
+//  lc.setRow(1,1,B00000000);
+//  lc.setRow(1,5,B00000000);
+//  lc.setRow(2,0,B00000000);
+//  lc.setRow(2,3,B00000000);
+//  lc.setRow(2,4,B00000000);
+//  lc.setRow(2,5,B00000000);
+//  lc.setRow(3,0,B00000000);
+// while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//  lc.setRow(1,2,B00001110);//L
+//  lc.setRow(1,3,B01110111);//A
+//  lc.setRow(1,4,B00001111);//t
+//
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12){
+//          lc.setRow(2,0,B01110100);
+//          wpLat = "N";
+//        }
+//        if(keyVal == 13){
+//          lc.setRow(2,0,B00100100);
+//          wpLat = "S";
+//        }
+//      if((keyVal < 10) && (count < 2)) {
+//          wpLatDDNew[count] = keyVal;
+//          setdigits(2, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(2);
+//        count = 0;
+//      }
+//   }
+// }
+//int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
+//while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//      if((keyVal < 10) && (count < 5)) {
+//          wpLatMMNew[count] = keyVal;
+//          setdigits(3, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(3);
+//        count = 0;
+//      }
+//   }
+//  }
+//int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
+//wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
+//        lc.clearDisplay(1);
+//        lc.clearDisplay(2);
+//        lc.clearDisplay(3);
+//        lc.setRow(1,2,B00001110); //L
+//        lc.setRow(1,3,B01111110);// O
+//        lc.setRow(1,4,B01110110);//N
+// while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12){
+//          lc.setRow(2,0,B01110100);
+//          wpLon = "W";
+//        }
+//        if(keyVal == 13){
+//          lc.setRow(2,0,B00100100);
+//          wpLon = "E";
+//        }
+//      if((keyVal < 10) && (count < 2)) {
+//          wpLonDDNew[count] = keyVal;
+//          setdigits(2, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(2);
+//        count = 0;
+//      }
+//   }
+// }
+// 
+//int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
+//while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//      if((keyVal < 10) && (count < 5)) {
+//          wpLonMMNew[count] = keyVal;
+//          setdigits(3, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(3);
+//        lc.clearDisplay(3);
+//        count = 0;
+//      }
+//   }
+//  }
+//int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
+//wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
+//navActive = 1;
+//for(int i=2;i<4;i++) {
+//    lc.setRow(i,0,B00100100);
+//    lc.setChar(i,1,'-',false);
+//    lc.setChar(i,2,'-',false);
+//    lc.setChar(i,3,'-',false);
+//    lc.setChar(i,4,'-',false);
+//    lc.setChar(i,5,'-',false);
+//    setDigits(); 
+//    }
+// }
+//  //  executeNav();
+//}
 
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-     oldkey = keyVal;
-     if(keyVal == 12){
-          lc.setRow(2,0,B01110100);
-          wpLat = "N";
-        }
-        if(keyVal == 13){
-          lc.setRow(2,0,B00100100);
-          wpLat = "S";
-        }
-      if((keyVal < 10) && (count < 2)) {
-          wpLatDDNew[count] = keyVal;
-          setdigits(2, count+1, keyVal);
-          count++;
-      }
-      if(keyVal == 18) {
-        fresh = 1;
-      }
-      if(fresh == 1){
-        lc.clearDisplay(2);
-        count = 0;
-      }
-   }
- }
-int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
-while(keyVal == 15){ keyVal = readkb();}
- count = 0; fresh = 0;
-  while(keyVal != 15 && fresh == 0){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-     oldkey = keyVal;
-      if((keyVal < 10) && (count < 5)) {
-          wpLatMMNew[count] = keyVal;
-          setdigits(3, count+1, keyVal);
-          count++;
-      }
-      if(keyVal == 18) {
-        fresh = 1;
-      }
-      if(fresh == 1){
-        lc.clearDisplay(3);
-        count = 0;
-      }
-   }
-  }
-int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
-wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
-        lc.clearDisplay(1);
-        lc.clearDisplay(2);
-        lc.clearDisplay(3);
-        lc.setRow(1,2,B00001110); //L
-        lc.setRow(1,3,B01111110);// O
-        lc.setRow(1,4,B01110110);//N
- while(keyVal == 15){ keyVal = readkb();}
- count = 0; fresh = 0;
-  while(keyVal != 15 && fresh == 0){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-     oldkey = keyVal;
-     if(keyVal == 12){
-          lc.setRow(2,0,B01110100);
-          wpLon = "W";
-        }
-        if(keyVal == 13){
-          lc.setRow(2,0,B00100100);
-          wpLon = "E";
-        }
-      if((keyVal < 10) && (count < 2)) {
-          wpLonDDNew[count] = keyVal;
-          setdigits(2, count+1, keyVal);
-          count++;
-      }
-      if(keyVal == 18) {
-        fresh = 1;
-      }
-      if(fresh == 1){
-        lc.clearDisplay(2);
-        count = 0;
-      }
-   }
- }
- 
-int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
-while(keyVal == 15){ keyVal = readkb();}
- count = 0; fresh = 0;
-  while(keyVal != 15 && fresh == 0){
-   keyVal = readkb();
-   if(keyVal != oldkey) {
-     oldkey = keyVal;
-      if((keyVal < 10) && (count < 5)) {
-          wpLonMMNew[count] = keyVal;
-          setdigits(3, count+1, keyVal);
-          count++;
-      }
-      if(keyVal == 18) {
-        fresh = 1;
-      }
-      if(fresh == 1){
-        lc.clearDisplay(3);
-        lc.clearDisplay(3);
-        count = 0;
-      }
-   }
-  }
-int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
-wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
-navActive = 1;
-for(int i=2;i<4;i++) {
-    lc.setRow(i,0,B00100100);
-    lc.setChar(i,1,'-',false);
-    lc.setChar(i,2,'-',false);
-    lc.setChar(i,3,'-',false);
-    lc.setChar(i,4,'-',false);
-    lc.setChar(i,5,'-',false);
-    setDigits(); 
-    }
- }
-    executeNav();
-}
-
-
-void executeNav(){ 
-  if (!GPS.fix) {
-   lampit(255,0,0, 16);
-   lampit(255,200,59, 15);
-  }
-  Serial.println(wpLat + "" + wpLatitude + " " + wpLon + wpLongitude);
- if (GPS.newNMEAreceived()) {
-    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-      return;  // we can fail to parse a sentence in which case we should just wait for another
-  }
-  if (timer > millis())  timer = millis();
-  if (millis() - timer > 2000) { 
-    timer = millis(); // reset the timer
-    if (GPS.fix) {
-       compAct(); 
-      lampit(0,0,0, 16);
-      lampit(0,0,0, 15);
-      lampit(0,150,0, 9);
-      lampit(0,150,0, 10);
-      wpGPS = input2string (wpLat, wpLatitude, wpLon, wpLongitude);
-      here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
-      range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
-      rangeft = range*5280;                  // convert the range to feet
-      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)));  // Determins the angle in radians of the bearing to desired location
-      float rangeDisplay = range;
-      float bearingDisplay = bearing * 100 ;
-      if(range < 1){
-        rangeDisplay = rangeft;
-      }
-      if(bearingDisplay < 0){
-        bearingDisplay = bearingDisplay + 359;
-      }
-       if(bearingDisplay == 0){
-        bearingDisplay = 360;
-      }
+//$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
+void action7(){     //Read GPS Heading
+    digitalWrite(RELAY_PIN,LOW);
   delay(20);
-      imuval[4] = GPS.angle;
-      imuval[5] = bearingDisplay;
-      imuval[6] = rangeDisplay;
-      setDigits(); 
-    }
+  byte data[83];
+  Serial.write("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
+  delay(20);
+  Serial.write("$PMTK220,1000*1F");
+  delay(20);
+  Serial.write("$PMTK300,1000,0,0,0,0*1C");
+  delay(20);
+  while((Serial.available()) > 0) {int x =  Serial.read(); }
+  while((Serial.available()) < 1) {int x = 1; }
+  delay(6);
+  int index = 0;
+  while(Serial.available() > 0){
+  data[index] = Serial.read();
+  delayMicroseconds(960);
+  index++;
+  if(index >= 68) {index = 67; }
   }
+  int lat = 0;
+  int lon = 0;
+  int alt = 0;
+  int heading = 0;
+  if (count < 10){
+    count++;
+ lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
+ lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
+ alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+  }
+  else {
+    count++;
+ lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
+ lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
+ alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+  }
+ if (count > 25) {count = 0;}
+ if (data[28] != 78) {lat = ((lat - (lat + lat)));}
+ if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
+ heading =(((data[51] -48) * 100) + ((data[52] - 48) * 10) + ((data[54] - 48)));
+   imuval[4] = heading; 
+   imuval[5] = lat;
+   imuval[6] = lon;
+   digitalWrite(RELAY_PIN,LOW);
+   setDigits(); 
 }
+
+
+//void executeNav(){ 
+//  if (!GPS.fix) {
+//   lampit(255,0,0, 16);
+//   lampit(255,200,59, 15);
+//  }
+//  Serial.println(wpLat + "" + wpLatitude + " " + wpLon + wpLongitude);
+// if (GPS.newNMEAreceived()) {
+//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+//      return;  // we can fail to parse a sentence in which case we should just wait for another
+//  }
+//  if (timer > millis())  timer = millis();
+//  if (millis() - timer > 2000) { 
+//    timer = millis(); // reset the timer
+//    if (GPS.fix) {
+//       compAct(); 
+//      lampit(0,0,0, 16);
+//      lampit(0,0,0, 15);
+//      lampit(0,150,0, 9);
+//      lampit(0,150,0, 10);
+//      wpGPS = input2string (wpLat, wpLatitude, wpLon, wpLongitude);
+//      here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
+//      range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
+//      rangeft = range*5280;                  // convert the range to feet
+//      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)));  // Determins the angle in radians of the bearing to desired location
+//      float rangeDisplay = range;
+//      float bearingDisplay = bearing * 100 ;
+//      if(range < 1){
+//        rangeDisplay = rangeft;
+//      }
+//      if(bearingDisplay < 0){
+//        bearingDisplay = bearingDisplay + 359;
+//      }
+//       if(bearingDisplay == 0){
+//        bearingDisplay = 360;
+//      }
+//  delay(20);
+//      imuval[4] = GPS.angle;
+//      imuval[5] = bearingDisplay;
+//      imuval[6] = rangeDisplay;
+//      setDigits(); 
+//    }
+//  }
+//}
 
 //void action8() { // T-Minus countdown timer
 //DateTime now = rtc.now();
@@ -811,12 +886,14 @@ void readimu(){
 
  void imu_1202(){
   compAct();
+  bool alarm = 0;
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
       Wire.endTransmission(false);
       Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
        int randNumb = random(10, 700); 
         if (randNumb == 121 || randNumb == 677) {
+        
           lampit(100,100,0,6);
           lampit(0,0,0,3);
           lampit(0,0,0,17);
@@ -825,6 +902,13 @@ void readimu(){
               imuval[5]= 1202;
               setDigits(); 
             while(keyVal != 15){
+                alarm = 1;
+                if (timer > millis())  timer = millis();
+              digitalWrite(BUZZER_PIN,HIGH);
+              if (millis() - timer >= 500) {    // save the last time you blinked the LED
+                timer = millis(); // reset the timer
+                digitalWrite(BUZZER_PIN, LOW);
+                }
             keyVal = readkb();
              for(int i=1;i<4;i++) {
                 lc.setRow(i,0,B00000000);
@@ -837,6 +921,8 @@ void readimu(){
              }
             if(keyVal != oldkey) {
               for(int i=0;i<7;i++) {
+              alarm = 0;
+              digitalWrite(BUZZER_PIN,HIGH);
                 lc.setRow(1,i,B00000000);
                 lc.setRow(2,i,B00000000); 
                 lc.setRow(3,i,B00000000); 
@@ -885,28 +971,20 @@ void readimu(){
  }
  }
 
-void testMp3(){
-  pinMode(9, OUTPUT);
-  digitalWrite(9, HIGH);
-  delay(1000);
-  digitalWrite(9, LOW);
-  delay(100);
-  digitalWrite(9, HIGH);
-  while(keyVal == 15){ keyVal = readkb();}
-  while(keyVal != 15){
-   keyVal = readkb();
-   if (keyVal == 17){
-      digitalWrite(9, LOW);
-      pinMode(9, INPUT);
-      prog = 0;
-    }
+  void testMp3(){
+    pinMode(9, OUTPUT);
+    digitalWrite(9,HIGH);
+    pinMode(9, OUTPUT);
+    digitalWrite(9,HIGH);
+    digitalWrite(9, LOW);
+    delay(100);
+    digitalWrite(9, HIGH);
   }
-}
  
- void jfk(byte jfk){
+  void jfk(byte jfk){
  if(audioTrack > 3) {audioTrack = 1;} 
   while(audioTrack != jfk){
-    pinMode(9, OUTPUT);
+     pinMode(9, OUTPUT);
     delay(100);
     pinMode(9, INPUT);
     delay(100);
