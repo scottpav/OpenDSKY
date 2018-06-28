@@ -1,18 +1,24 @@
+#include <DFPlayerMini_Fast.h>
+
 #include <Adafruit_NeoPixel.h>
 #include <math.h>
 #include<Wire.h>
 #include "RTClib.h"
 #include "LedControl.h"
-
 #define PIN            6
 #define RELAY_PIN      7
-#define BUZZER_PIN      8
 #define NUMPIXELS      18
 #define GPSECHO  false
+#define Start_Byte 0x7E
+#define Version_Byte 0xFF
+#define Command_Length 0x06
+#define End_Byte 0xEF
+#define Acknowledge 0x00 //Returns info with command 0x41 [0x01: info, 0x00: no info]
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
+DFPlayerMini_Fast player;
 
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
@@ -29,7 +35,7 @@ byte keyVal = 20;
 byte oldkey = 20;
 bool fresh = 0;
 bool navActive = 0;
-
+bool isPlaying = false;
 byte action = 0;
 bool error = 0;
 byte currentaction = 0;
@@ -68,10 +74,6 @@ void setup() {
   pinMode(A3, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, HIGH);  
-  pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, HIGH);
-  pinMode(9, OUTPUT);
-  digitalWrite(9,HIGH);
   randomSeed(analogRead(A7));
   pixels.begin();
   for(int index = 0; index < 4; index++){
@@ -86,26 +88,15 @@ void setup() {
   Wire.endTransmission(true);
   rtc.begin();    
   Serial.begin(9600);
-//    lampit(0,255,0, 0);
-//    lampit(0,255,0, 1);
-//    lampit(0,255,0, 2);
-// for(int i=1;i<4;i++) {
-//    lc.setRow(i,0,B00100100);
-//    lc.setChar(i,1,'-',false);
-//    lc.setChar(i,2,'-',false);
-//    lc.setChar(i,3,'-',false);
-//    lc.setChar(i,4,'-',false);
-//    lc.setChar(i,5,'-',false);
-//   }
+  player.begin(Serial);
   for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index);}
-  
  }
 
 uint32_t timer = millis();
 void loop() {
- if (prog == 62){ testMp3(); }
- if (prog == 70){jfk(1);}
- if (prog == 69){jfk(1);}  
+ if (prog == 62){eagleHasLanded();}
+ if (prog == 70){jfk(2);}
+ if (prog == 69){jfk(3);}  
  if (mode == 0) {mode0();}
  if (mode == 1) {mode1();}
  if (mode == 2) {mode2();}
@@ -568,7 +559,7 @@ DateTime now = rtc.now();
 void action7(){     //Read GPS Heading
     digitalWrite(RELAY_PIN,LOW);
   delay(20);
-  byte data[83];
+  byte data[151];
   Serial.write("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
   delay(20);
   Serial.write("$PMTK220,1000*1F");
@@ -580,31 +571,30 @@ void action7(){     //Read GPS Heading
   delay(6);
   int index = 0;
   while(Serial.available() > 0){
-  data[index] = Serial.read();
-  delayMicroseconds(960);
+  data[index+71] = Serial.read();
+  delayMicroseconds(1000);
   index++;
-  if(index >= 68) {index = 67; }
+  if(index >= 141) {index = 140; }
   }
   int lat = 0;
   int lon = 0;
-  int alt = 0;
   int heading = 0;
   if (count < 10){
     count++;
- lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
- lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
- alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+ lat = (((data[91] - 48) * 1000) + ((data[92] -48) * 100) + ((data[93] - 48) * 10) + ((data[94] - 48)));
+ lon = (((data[103] - 48) * 10000) + ((data[104] - 48) * 1000) + ((data[105] -48) * 100) + ((data[106] - 48) * 10) + ((data[107] - 48)));
+ heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
   }
   else {
     count++;
- lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
- lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
- alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+ lat = (((data[96] - 48) * 10000) + ((data[97] - 48) * 1000) + ((data[98] -48) * 100) + ((data[99] - 48) * 10) + ((data[100] - 48)));
+ lon = (((data[109] - 48) * 10000) + ((data[110] - 48) * 1000) + ((data[111] -48) * 100) + ((data[112] - 48) * 10) + ((data[113] - 48)));
+ heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
   }
  if (count > 25) {count = 0;}
- if (data[28] != 78) {lat = ((lat - (lat + lat)));}
- if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
- heading =(((data[51] -48) * 100) + ((data[52] - 48) * 10) + ((data[54] - 48)));
+ if (data[101] != 78) {lat = ((lat - (lat + lat)));}
+ if (data[115] != 69) {lon = ((lon - (lon + lon)));} 
+ heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
    imuval[4] = heading; 
    imuval[5] = lat;
    imuval[6] = lon;
@@ -970,14 +960,13 @@ void readimuAccel(){
 
  void imu_1202(){
   compAct();
-  bool alarm = 0;
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
       Wire.endTransmission(false);
       Wire.requestFrom(MPU_addr,14,true);  // request a total of 14 registers
        int randNumb = random(10, 700); 
         if (randNumb == 121 || randNumb == 677) {
-        
+        playAlarm();         
           lampit(100,100,0,6);
           lampit(0,0,0,3);
           lampit(0,0,0,17);
@@ -986,13 +975,6 @@ void readimuAccel(){
               imuval[5]= 1202;
               setDigits(); 
             while(keyVal != 15){
-                alarm = 1;
-                if (timer > millis())  timer = millis();
-              digitalWrite(BUZZER_PIN,HIGH);
-              if (millis() - timer >= 500) {    // save the last time you blinked the LED
-                timer = millis(); // reset the timer
-                digitalWrite(BUZZER_PIN, LOW);
-                }
             keyVal = readkb();
              for(int i=1;i<4;i++) {
                 lc.setRow(i,0,B00000000);
@@ -1005,9 +987,8 @@ void readimuAccel(){
              }
             if(keyVal != oldkey) {
               for(int i=0;i<7;i++) {
-              alarm = 0;
-              digitalWrite(BUZZER_PIN,HIGH);
-                lc.setRow(1,i,B00000000);
+pause();
+lc.setRow(1,i,B00000000);
                 lc.setRow(2,i,B00000000); 
                 lc.setRow(3,i,B00000000); 
                 lc.setRow(4,i,B00000000); 
@@ -1054,30 +1035,15 @@ void readimuAccel(){
  } 
  }
  }
-
-  void testMp3(){
-    pinMode(9, OUTPUT);
-    digitalWrite(9,HIGH);
-    pinMode(9, OUTPUT);
-    digitalWrite(9,HIGH);
-    digitalWrite(9, LOW);
-    delay(100);
-    digitalWrite(9, HIGH);
-  }
  
   void jfk(byte jfk){
+   playFirst();
  if(audioTrack > 3) {audioTrack = 1;} 
   while(audioTrack != jfk){
-     pinMode(9, OUTPUT);
-    delay(100);
-    pinMode(9, INPUT);
-    delay(100);
+   playNext();
     audioTrack++;
     if(audioTrack > 3) {audioTrack = 1;}
   }
-   pinMode(9, OUTPUT);
-    delay(100);
-    pinMode(9, INPUT);
     audioTrack++;
     prog = 0;
   }
@@ -1198,3 +1164,70 @@ void readimuAccel(){
     float b = atan2(y,x);
     return b;
     };
+    
+    void playFirst()
+    {
+      execute_CMD(0x3F, 0, 0);
+      delay(500);
+      setVolume(30);
+      delay(500);
+      execute_CMD(0x11,0,1); 
+      delay(500);
+    }
+    
+    void pause()
+    {
+      execute_CMD(0x0E,0,0);
+      delay(500);
+    }
+    
+    void play()
+    {
+      execute_CMD(0x0D,0,1); 
+      delay(500);
+    }
+
+     void eagleHasLanded()
+    {
+      player.play(2);      
+      prog=0;
+    }
+
+     void playAlarm()
+    {
+      player.play(3);      
+    }
+    
+    
+    void playNext()
+    {
+      execute_CMD(0x01,0,1);
+      delay(500);
+    }
+    
+    void playPrevious()
+    {
+      execute_CMD(0x02,0,1);
+      delay(500);
+    }
+    
+    void setVolume(int volume)
+    {
+      execute_CMD(0x06, 0, volume); // Set the volume (0x00~0x30)
+      delay(2000);
+    }
+    
+    void execute_CMD(byte CMD, byte Par1, byte Par2)
+    // Excecute the command and parameters
+    {
+    // Calculate the checksum (2 bytes)
+    word checksum = -(Version_Byte + Command_Length + CMD + Acknowledge + Par1 + Par2);
+    // Build the command line
+    byte Command_line[10] = { Start_Byte, Version_Byte, Command_Length, CMD, Acknowledge,
+    Par1, Par2, highByte(checksum), lowByte(checksum), End_Byte};
+    //Send the command line to the module
+    for (byte k=0; k<10; k++)
+    {
+    Serial.write( Command_line[k]);
+    }
+}
