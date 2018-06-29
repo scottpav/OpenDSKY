@@ -14,6 +14,11 @@ Modified code from https://opendsky.backerkit.com/
 10. PRO 62  - Play Apollo 11 Lunar Descent/Landing Audio
 
 # Required Libraries:
-DFPlayerMiniFast(Requires TX ONLY(Nano) to be connected to pin 2(DFPlayer): https://github.com/scottpav/DFPlayerMini_Fast
-Adafruit NeoPixel Library: https://github.com/adafruit/Adafruit_NeoPixel
-Led Control: https://github.com/wayoda/LedControl
+> DFPlayerMiniFast - Requires Nano TX -> DFPlayer pin2: 
+https://github.com/scottpav/DFPlayerMini_Fast
+
+> Adafruit NeoPixel Library 
+https://github.com/adafruit/Adafruit_NeoPixel
+
+> Led Control 
+https://github.com/wayoda/LedControl
