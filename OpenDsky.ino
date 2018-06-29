@@ -95,7 +95,7 @@ void setup() {
 uint32_t timer = millis();
 void loop() {
  if (prog == 62){eagleHasLanded();}
- if (prog == 70){jfk(2);}
+ if (prog == 70){haveAProblem();}
  if (prog == 69){jfk(3);}  
  if (mode == 0) {mode0();}
  if (mode == 1) {mode1();}
@@ -137,39 +137,40 @@ void mode0() {//no action set just reading the kb
 }
 
 void mode1() {//inputing the verb
-  lampit(0,0,0, 2);
  if (timer > millis())  timer = millis();
+   lampit(0,0,0, 2);
+   flashkr();
+ if(error == 1){flasher();}
   if (millis() - timer > 500) { 
     timer = millis(); // reset the timer
    lampit(0,150,0, 2); 
   }
-flashkr();
- if(error == 1){flasher();}
  keyVal = readkb();
  processkey1(); 
 }
 
 void mode2() {//inputing the noun
-  lampit(0,0,0, 0);
  if (timer > millis())  timer = millis();
+   lampit(0,0,0, 0);
+   flashkr();
+   if(error == 1){flasher();}
   if (millis() - timer > 500) { 
     timer = millis(); // reset the timer
    lampit(0,150,0, 0); 
   }
-   if(error == 1){flasher();}
  keyVal = readkb();
  processkey2(); 
 }
 
 void mode3() {//inputing the program
-  lampit(0,0,0, 1);
  if (timer > millis())  timer = millis();
+   flashkr();
+   if(error == 1){flasher();}
+     lampit(0,0,0, 1);
   if (millis() - timer > 500) { 
     timer = millis(); // reset the timer
    lampit(0,150,0, 1); 
   }
-  flashkr();
-   if(error == 1){flasher();}
  keyVal = readkb();
  processkey3();
 }
@@ -967,14 +968,12 @@ void readimuAccel(){
        int randNumb = random(10, 700); 
         if (randNumb == 121 || randNumb == 677) {
         playAlarm();         
-          lampit(100,100,0,6);
-          lampit(0,0,0,3);
-          lampit(0,0,0,17);
               keyVal = readkb();
               imuval[4]= 1202;
               imuval[5]= 1202;
               setDigits(); 
-            while(keyVal != 15){
+            while(keyVal != 18){
+            lampit(100,100,0,6);
             keyVal = readkb();
              for(int i=1;i<4;i++) {
                 lc.setRow(i,0,B00000000);
@@ -987,8 +986,8 @@ void readimuAccel(){
              }
             if(keyVal != oldkey) {
               for(int i=0;i<7;i++) {
-pause();
-lc.setRow(1,i,B00000000);
+              player.pause();
+              lc.setRow(1,i,B00000000);
                 lc.setRow(2,i,B00000000); 
                 lc.setRow(3,i,B00000000); 
                 lc.setRow(4,i,B00000000); 
@@ -1037,10 +1036,8 @@ lc.setRow(1,i,B00000000);
  }
  
   void jfk(byte jfk){
-   playFirst();
  if(audioTrack > 3) {audioTrack = 1;} 
   while(audioTrack != jfk){
-   playNext();
     audioTrack++;
     if(audioTrack > 3) {audioTrack = 1;}
   }
@@ -1165,69 +1162,19 @@ lc.setRow(1,i,B00000000);
     return b;
     };
     
-    void playFirst()
-    {
-      execute_CMD(0x3F, 0, 0);
-      delay(500);
-      setVolume(30);
-      delay(500);
-      execute_CMD(0x11,0,1); 
-      delay(500);
-    }
-    
-    void pause()
-    {
-      execute_CMD(0x0E,0,0);
-      delay(500);
-    }
-    
-    void play()
-    {
-      execute_CMD(0x0D,0,1); 
-      delay(500);
-    }
-
      void eagleHasLanded()
     {
       player.play(2);      
-      prog=0;
+      prog=11;
     }
 
      void playAlarm()
     {
       player.play(3);      
     }
-    
-    
-    void playNext()
+
+    void haveAProblem()
     {
-      execute_CMD(0x01,0,1);
-      delay(500);
+      player.play(4);
+      prog=11;
     }
-    
-    void playPrevious()
-    {
-      execute_CMD(0x02,0,1);
-      delay(500);
-    }
-    
-    void setVolume(int volume)
-    {
-      execute_CMD(0x06, 0, volume); // Set the volume (0x00~0x30)
-      delay(2000);
-    }
-    
-    void execute_CMD(byte CMD, byte Par1, byte Par2)
-    // Excecute the command and parameters
-    {
-    // Calculate the checksum (2 bytes)
-    word checksum = -(Version_Byte + Command_Length + CMD + Acknowledge + Par1 + Par2);
-    // Build the command line
-    byte Command_line[10] = { Start_Byte, Version_Byte, Command_Length, CMD, Acknowledge,
-    Par1, Par2, highByte(checksum), lowByte(checksum), End_Byte};
-    //Send the command line to the module
-    for (byte k=0; k<10; k++)
-    {
-    Serial.write( Command_line[k]);
-    }
-}
