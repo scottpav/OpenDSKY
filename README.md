@@ -1,8 +1,8 @@
 # OpenDSKY
-Modified code from https://opendsky.backerkit.com/
+> Modified code from https://opendsky.backerkit.com/
 
 # Available functions as of 06/22/2018:
-1.  V16 N17 - Display IMU Gyro XYZ
+> 1.  V16 N17 - Display IMU Gyro XYZ
 2.  V16 N18 - Display IMU Accel XYZ
 3.  V16 N19 - Display Date(Month/Day) & Time
 4.  V16 N36 - Read Time From RTC
