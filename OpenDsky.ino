@@ -98,7 +98,7 @@ uint32_t timer = millis();
 void loop() {
  if (prog == 62){eagleHasLanded();}
  if (prog == 70){haveAProblem();}
- if (prog == 69){jfk(3);}  
+ if (prog == 69){weChoose();}  
  if (mode == 0) {mode0();}
  if (mode == 1) {mode1();}
  if (mode == 2) {mode2();}
@@ -1182,19 +1182,26 @@ void readimuAccel(){
     return b;
     };
     
-  
+     void weChoose()
+    {
+      player.play(4);   
+      prog=11;   
+    }
+    
      void eagleHasLanded()
     {
-      player.play(2);      
+      player.play(1);      
       prog=11;
     }
 
      void playAlarm()
     {
-      player.play(3);      
+      player.play(3);  
+      prog=11;
     }
-
-    void haveAProblem(){
-      player.play(4);
+    
+    void haveAProblem()
+    {
+      player.play(2);
       prog=11;
     }
