@@ -73,7 +73,7 @@ void setup() {
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, HIGH);  
+  digitalWrite(RELAY_PIN, LOW);  
   randomSeed(analogRead(A7));
   pixels.begin();
   for(int index = 0; index < 4; index++){
@@ -90,6 +90,7 @@ void setup() {
   Serial.begin(9600);
   player.begin(Serial);
   for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index);}
+  player.volume(30);
  }
 
 uint32_t timer = millis();
@@ -246,7 +247,7 @@ void action2() { // Reads Time from RTC
 }
 
 //void action3(){     //Read GPS POS & ALT
-//  digitalWrite(RELAY_PIN, LOW);
+//  digitalWrite(RELAY_PIN, HIGH);
 //  delay(20);
 //  useInterrupt(true);
 //  delay(1000);
@@ -275,14 +276,14 @@ void action2() { // Reads Time from RTC
 //      imuval[4] = lat;
 //      imuval[5] = lon;
 //      imuval[6] = alt;
-//      digitalWrite(RELAY_PIN, HIGH);
+//      digitalWrite(RELAY_PIN, LOW);
 //      setDigits();  
 //    }
 //  }
 //}
 
 void action3(){     //Read GPS
-  digitalWrite(RELAY_PIN,LOW);
+  digitalWrite(RELAY_PIN,HIGH);
   delay(20);
   byte data[83];
   Serial.write("$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
@@ -558,7 +559,7 @@ DateTime now = rtc.now();
 
 //$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
 void action7(){     //Read GPS Heading
-    digitalWrite(RELAY_PIN,LOW);
+    digitalWrite(RELAY_PIN,HIGH);
   delay(20);
   byte data[151];
   Serial.write("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
@@ -1162,6 +1163,7 @@ void readimuAccel(){
     return b;
     };
     
+  
      void eagleHasLanded()
     {
       player.play(2);      
@@ -1173,8 +1175,7 @@ void readimuAccel(){
       player.play(3);      
     }
 
-    void haveAProblem()
-    {
+    void haveAProblem(){
       player.play(4);
       prog=11;
     }
