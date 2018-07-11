@@ -89,7 +89,8 @@ void setup() {
   rtc.begin();    
   Serial.begin(9600);
   player.begin(Serial);
-  for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index);}
+  //Light up PRO, NOUN, VERB and NO ATT
+  for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index); lampit(100,100,100, 16);}
   player.volume(30);
  }
 
@@ -112,7 +113,7 @@ void loop() {
  delay(100);
 
  if(action == 1) {action1();} // V16N17 ReadIMU Gyro
- if(action == 2) {action2();} // V16N36 ReadTime
+ if(action == 2) {action2();compTime();} // V16N36 ReadTime
  if(action == 3) {action3();} // V16N43 GPS POS & ALT
  if(action == 4) {action4();} // V16N87 READ IMU WITH RANDOM 1202 ALARM
  if(action == 5) {action5();} // V21N36 Set The Time
@@ -178,8 +179,11 @@ void mode3() {//inputing the program
 
 void startUp() {
   for (int index = 0; index < 4; index++){lampit(0,0,0, index);delay(200);lampit(0,150,0, index);}
-  for (int index = 4; index < 18; index++) {if(index < 11){lampit(100,100,0, index);}if(index <= 12){lampit(100,100,100, 23-index);}
-  delay(50);}
+  for (int index = 4; index < 18; index++) {
+    if(index < 11){lampit(100,100,0, index);}
+    if(index <= 12){lampit(100,100,100, 23-index);}
+    delay(50);
+  }
 //for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
   for (int index = 0; index < 4; index++) {
     for (int indexb = 0; indexb < 6; indexb++){
@@ -189,8 +193,8 @@ void startUp() {
   }
   delay(1000);
  // for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
-  for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
-  for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
+  for (int index = 4; index < 18; index++) {lampit(0,0,0, index);}
+        delay(25);
   for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
   verbnew[0] = verbold[0]; verbnew[1] = verbold[1];
   verb = ((verbold[0] * 10) + verbold[1]);
@@ -200,6 +204,7 @@ void startUp() {
   else{setdigits(0, 0,prognew[0]);setdigits(0, 1,prognew[1]);}
    if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);}
   else{setdigits(0, 4,nounnew[0]);setdigits(0, 5,nounnew[1]);}
+  
   keyVal = 20;
   mode = 0;
   validateAct(); 
@@ -216,9 +221,8 @@ void mode4() {
     }
   }
   delay(5000);
-  for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
-  for (int index = 4; index < 11; index++) {lampit(0,0,0, index);}
-  for (int index = 11; index < 18; index++) {lampit(0,0,0, index);}
+  for (int index = 3; index < 11; index++) {lampit(0,0,0, index);}
+  for (int index = 11; index < 18; index++) {if(index != 16){lampit(0,0,0, index);}}
   for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
   verbnew[0] = verbold[0]; verbnew[1] = verbold[1];
   verb = ((verbold[0] * 10) + verbold[1]);
@@ -231,6 +235,7 @@ void mode4() {
   keyVal = 20;
   mode = 0;
   validateAct(); 
+    for (int index = 3; index < 18; index++) {if(index != 16){lampit(0,0,0, index);}}
   }
 
 
@@ -244,6 +249,10 @@ void action2() { // Reads Time from RTC
    imuval[5] = (now.minute());
    imuval[6] = (now.second());
    setDigits();  
+}
+
+void compTime() {
+    if(toggle == 0) {lampit(0,0,0, 3);} else {lampit(0,150,0, 3);}
 }
 
 //void action3(){     //Read GPS POS & ALT
@@ -787,6 +796,7 @@ void processkey0() {
 }
 
 void processkey1() {
+  lampit(0,150,0, 2);
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
   if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {
@@ -806,6 +816,7 @@ void processkey1() {
 }
 
 void processkey2() {
+  lampit(0,150,0, 0);
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {fresh = 0;
@@ -825,6 +836,7 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
 }
 
 void processkey3() {
+  lampit(0,150,0, 1);
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {prog = ((prognew[0] * 10) + (prognew[1]));fresh = 0;
   if((prog != 16) && (prog != 21) && (prog != 35) && (prog != 11) && (prog != 62) && (prog != 69) &&(prog != 70) && (prog != 0)) {error = 1;} else {
@@ -882,7 +894,10 @@ else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time
  else if(prog == 11) {action = 8;newAct = 0; verb = 16; noun = 33;}
  else{newAct = 0;action = 0;}
 }
+
 void readimuGyro(){
+  //Extinguish NO ATT
+  lampit(0,0,0, 16);
   compAct();
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
@@ -898,6 +913,8 @@ void readimuGyro(){
  }
 
 void readimuAccel(){
+  //Extinguish NO ATT
+  lampit(0,0,0, 16);
   compAct();
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
@@ -961,6 +978,8 @@ void readimuAccel(){
  }
 
  void imu_1202(){
+    //Extinguish NO ATT
+  lampit(0,0,0, 16);
   compAct();
       Wire.beginTransmission(MPU_addr);
       Wire.write(0x3B);  // starting with register 0x3B (ACCEL_XOUT_H)
