@@ -11,7 +11,7 @@ Modified code from https://opendsky.backerkit.com/
 7.  V21 N36 - Set the Time on RTC Module
 8.  V16 N46 - Display GPS Position & Heading
 9.  V16 N33 - User Configurable Countdown Timer
-10. PRO 62  - Play Apollo 11 Lunar Descent/Landing Audio
+10. V16 N68 - Apollo 11 Lunar Descent/Landing Simulation
 
 # Required Libraries
 > DFPlayerMiniFast (Nano TX -> DFPlayer pin2): https://github.com/scottpav/DFPlayerMini_Fast
