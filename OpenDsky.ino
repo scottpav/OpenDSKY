@@ -121,6 +121,7 @@ void loop() {
  if(action == 7) {action7();} // V16N46 GPS VEL & ALT
  if(action == 8) {action8();} // V16N18 ReadIMU Accel
  if(action == 9) {action9();} // V16N19 Read Temp Date & Time
+ if(action == 10) {action10();} // V16N68 Apollo 11 Decent & Landing
 
  Serial.print(verb);
  Serial.print("  ");
@@ -750,6 +751,12 @@ void action9(){
   tempDateTime();
 }
 
+void action10() //V16N68 Apollo 11 Decent & Landing
+{
+  eagleHasLanded();
+  lunarDecentSim();
+}
+
 
 void mode11() {
  compAct(); 
@@ -817,6 +824,7 @@ void processkey1() {
 
 void processkey2() {
   lampit(0,150,0, 0);
+
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
   if((keyVal == 15) && (fresh == 1)) {fresh = 0;
@@ -831,7 +839,8 @@ if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); 
   if((keyVal == 10) && (fresh == 1)){mode = 1;count = 0; fresh = 0;}//verb
   if((keyVal == 14) && (fresh == 1)){mode = 3;count = 0; fresh = 0;}//program
   if((keyVal < 10)&&(count < 2)) {nounnew[count] = keyVal;setdigits(0, (count + 4), keyVal);count++;}
-  if(verb == 16 && noun == 87) {prog = 11; setdigits(0, 2, 1);setdigits(0, 3, 1);} 
+  if(verb == 16 && noun == 87) {prog = 11; setdigits(0, 2, 1);setdigits(0, 3, 1);}
+  if(verb == 16 && noun == 68) {prog = 63; setdigits(0, 2, 6);setdigits(0, 3, 3);} 
 }
 }
 
@@ -855,7 +864,7 @@ void compAct(){
   int randNumb = random(10, 30); 
   if ((randNumb == 15) || (randNumb == 20) || randNumb == 4 || randNumb == 17) {lampit(0,150,0,3);}
   else {lampit(0,0,0,3);}
-  if (randNumb == 9 || randNumb == 17 || randNumb == 16 || randNumb == 3) {lampit(90,90,90,17);}
+  if (randNumb == 9 || randNumb == 17) {lampit(90,90,90,17);}
   else {lampit(0,0,0,17);}
 }
 
@@ -891,6 +900,7 @@ else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time
  else if((verb == 16) && (noun == 46)) {action = 7;newAct = 0;count = 0;}//Display current ALT and Speed
   else if((verb == 16) && (noun == 18)) {action = 8;newAct = 0;}//Display IMU Accel
  else if((verb == 16) && (noun == 19)) {action = 9;newAct = 0;}//Display Temp/Time/Date
+ else if((verb == 16) && (noun == 68)) {action = 10;newAct = 0;prog == 63;} //Apollo 11 Decent & Landing
  else if(prog == 11) {action = 8;newAct = 0; verb = 16; noun = 33;}
  else{newAct = 0;action = 0;}
 }
@@ -978,7 +988,7 @@ void readimuAccel(){
  }
 
  void imu_1202(){
-    //Extinguish NO ATT
+  //Extinguish NO ATT
   lampit(0,0,0, 16);
   compAct();
       Wire.beginTransmission(MPU_addr);
@@ -1023,6 +1033,124 @@ void readimuAccel(){
           imuval[6]=Wire.read()<<8|Wire.read();  // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
           setDigits();      
         }
+ }
+
+  void lunarDecentSim(){
+  lampit(0,0,0, 16);
+  int totalSeconds = 213;
+  uint32_t timer2 = millis();
+  int i=0;
+  toggle = 0;
+  while(i < totalSeconds){
+    if(toggle == 1)
+    {
+      lampit(100,100,0,6);
+    }
+     
+        
+  /////////////////////////
+  //     1201 Alarm     //
+  /////////////////////// 
+      if(i > 9 && i < 19){
+        toggle = 1;
+        if(i == 10) {
+           for(int t=1;t<4;t++) {
+            for(int d=0;d<6;d++) {
+                lc.setRow(t,d,B00000000);
+              }
+          }
+      }
+       if(i > 11 && i < 19){
+          imuval[4]= 1201;
+          imuval[5]= 1201;
+          setDigits();
+           for(int i=1;i<4;i++) {
+                lc.setRow(i,0,B00000000);
+                lc.setRow(i,1,B00000000); 
+                if(i == 3){
+                   for(int d=0;d<6;d++) {
+                     lc.setRow(i,d,B00000000);
+                   }
+                }     
+            }
+            delay(4000);
+            toggle = 0;
+            i = 19;        
+         }
+      }
+  /////////////////////////
+  //       END 1201     //
+  ///////////////////////   
+
+   ////////////////////////
+  //     1202 Alarm     //
+  /////////////////////// 
+      if(i > 50 && i < 63){
+        toggle = 1; 
+        lampit(100,100,0,6);       
+        if(i == 51) {
+           for(int t=1;t<4;t++) {
+            for(int d=0;d<6;d++) {
+                lc.setRow(t,d,B00000000);
+              }
+          }
+      }
+       if(i > 52 && i < 63){
+          imuval[4]= 1202;
+          imuval[5]= 1202;
+          setDigits();
+           for(int i=1;i<4;i++) {
+                lc.setRow(i,0,B00000000);
+                lc.setRow(i,1,B00000000); 
+                if(i == 3){
+                   for(int d=0;d<6;d++) {
+                     lc.setRow(i,d,B00000000);
+                   }
+                }     
+            }
+            delay(4000);
+            toggle = 0;
+            i = 63;
+         }
+      }
+  /////////////////////////
+  //       END 1202     //
+  ///////////////////////   
+
+   ////////////////////////
+  //  ALT & VEL LIGHTS  //
+ //////////////////////// 
+      if(i > 131 && i < 200){
+        lampit(100,100,0,9);
+        lampit(100,100,0,10);
+      }
+  /////////////////////////
+  //   END ALT & VEL    //
+ ////////////////////////   
+
+      if(toggle == 0 && i < totalSeconds + 10)
+      {
+        lampit(0,0,0,6);
+        if (timer2 > millis())  timer2 = millis();
+        if (millis() - timer2 >= 300) {
+          int randNumb = random(0, 30); 
+          imuval[4]= 3120 + randNumb;
+          imuval[5]= 6390 + randNumb;
+          imuval[6]= 3910 + randNumb;
+          setDigits();            
+        timer2 = millis(); // reset the timer
+        }
+      }
+      compAct();
+      if (timer > millis())  timer = millis();
+      if (millis() - timer >= 1000) {
+          i++;
+          timer = millis(); // reset the timer
+      }
+    }
+    action = 0;
+    mode = 0;
+    prog = 0; 
  }
  
  void setDigits(){
