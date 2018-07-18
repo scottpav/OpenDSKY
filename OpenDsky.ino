@@ -35,7 +35,6 @@ byte keyVal = 20;
 byte oldkey = 20;
 bool fresh = 0;
 bool navActive = 0;
-bool isPlaying = false;
 byte action = 0;
 bool error = 0;
 byte currentaction = 0;
@@ -54,7 +53,6 @@ byte oldmode = 0;
 bool toggle = 0;
 byte togcount = 0;
 bool newAct = 0;
-byte audioTrack = 1;
 boolean usingInterrupt = false;
 
 byte wpLatDDNew[2];
@@ -177,40 +175,6 @@ void mode3() {//inputing the program
  keyVal = readkb();
  processkey3();
 }
-
-void startUp() {
-  for (int index = 0; index < 4; index++){lampit(0,0,0, index);delay(200);lampit(0,150,0, index);}
-  for (int index = 4; index < 18; index++) {
-    if(index < 11){lampit(100,100,0, index);}
-    if(index <= 12){lampit(100,100,100, 23-index);}
-    delay(50);
-  }
-//for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
-  for (int index = 0; index < 4; index++) {
-    for (int indexb = 0; indexb < 6; indexb++){
-      setdigits(index,indexb,8);
-      delay(25);
-    }
-  }
-  delay(1000);
- // for (int index = 0; index < 4; index++){lampit(0,0,0, index);}
-  for (int index = 4; index < 18; index++) {lampit(0,0,0, index);}
-        delay(25);
-  for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
-  verbnew[0] = verbold[0]; verbnew[1] = verbold[1];
-  verb = ((verbold[0] * 10) + verbold[1]);
-  if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);}
-  else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}
-  if (prog == 0) {lc.setRow(0,2,0);lc.setRow(0,3,0);}
-  else{setdigits(0, 0,prognew[0]);setdigits(0, 1,prognew[1]);}
-   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);}
-  else{setdigits(0, 4,nounnew[0]);setdigits(0, 5,nounnew[1]);}
-  
-  keyVal = 20;
-  mode = 0;
-  validateAct(); 
-  }
-
 void mode4() {
   for (int index = 0; index < 4; index++){lampit(0,0,0, index);delay(200);lampit(0,150,0, index);}
   for (int index = 4; index < 18; index++) {if(index < 11){lampit(100,100,0, index);}if(index <= 12){lampit(100,100,100, 23-index);}delay(50);}
@@ -364,7 +328,7 @@ DateTime now = rtc.now();
    if( NHR > 23) {NHR = 0;}
    if(NHR < 0) {NHR = 23;}
    }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE *100);
+   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
    setDigits();
    delay(200);
    lc.clearDisplay(1);
@@ -380,7 +344,7 @@ DateTime now = rtc.now();
    if( NMI > 59) {NMI = 0;}
    if(NMI < 0) {NMI = 59;} 
    }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE *100);
+   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
    setDigits(); 
    delay(200);
    lc.clearDisplay(2);
@@ -396,7 +360,7 @@ DateTime now = rtc.now();
    if( NSE > 59) {NSE = 0;}
    if(NSE < 0) {NSE = 59;}
    }
-   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE *100);
+   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
    setDigits();
    delay(200);
    lc.clearDisplay(3);
@@ -412,12 +376,6 @@ DateTime now = rtc.now();
 }
 
 void action6(){ //Set Date
-   byte setyear[4];
-   byte setmonth[2];
-   byte setday[2];
-   byte sethour[2];
-   byte setminiut[2];
-   byte setsecond[2];
 DateTime now = rtc.now();
   int NYR = now.year();
   int NMO = now.month();
@@ -425,8 +383,68 @@ DateTime now = rtc.now();
   int NHR = now.hour();
   int NMI = now.minute();
   int NSE = now.second();
+  while(keyVal == 15){ keyVal = readkb();}
+  while(keyVal != 15){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+    oldkey = keyVal;
+   if(keyVal == 12) {NMO++;}
+   if(keyVal == 13) {NMO--;}
+   if( NMO > 12) {NMO = 0;}
+   if(NMO < 0) {NMO = 12;} 
+   }
+   imuval[4] =  NMO; imuval[5] = (NDY); imuval[6] = NYR;
+   setDigits(); 
+   delay(200);
+   lc.clearDisplay(1);
+   delay(50); 
+  }
   
- rtc.adjust(DateTime(((setyear[0] * 1000) + (setyear[1] * 100) + (setyear[2] * 10) + (setyear[3])), ((setmonth[0] * 10) + (setmonth[1])),((setday[0] * 10) + (setday[1])), NHR,NMI,NSE)); 
+  while(keyVal == 15){ keyVal = readkb();}
+  while(keyVal != 15){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+    oldkey = keyVal;
+   if(keyVal == 12) {NDY++;}
+   if(keyVal == 13) {NDY--;} 
+   if( NDY > 31) {NDY = 0;}
+   if(NDY < 0) {NDY = 31;}
+   }
+   imuval[4] =  NMO; imuval[5] = (NDY); imuval[6] = NYR;
+   setDigits();
+   delay(200);
+   lc.clearDisplay(2);
+   delay(50);  
+  }
+  
+  while(keyVal == 15){ keyVal = readkb();}
+  while(keyVal != 15){
+    Serial.println(keyVal);
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+    oldkey = keyVal;
+   if(keyVal == 12) {NYR++;}
+   if(keyVal == 13) {NYR--;}
+   }
+   imuval[4] =  NMO; imuval[5] = (NDY); imuval[6] = NYR;
+   setDigits();
+   delay(200);
+   lc.clearDisplay(3);
+   delay(50); 
+  }
+  
+ rtc.adjust(DateTime(NYR,NMO,NDY,NHR,NMI,NSE)); 
+ action = 9; 
+ setdigits(0, 0, 1);
+ setdigits(0, 1, 6);
+ setdigits(0, 4, 1);
+ setdigits(0, 5, 9);
+ verbold[0] = 1; 
+ verbold[1] = 6; 
+ nounold[0] = 1; 
+ nounold[1] = 9; 
+ verb = 16;
+ noun = 19; 
 }
 
 //void action7(){     //Read GPS VEL & ALT
@@ -1182,16 +1200,6 @@ void readimuAccel(){
  } 
  }
  }
- 
-  void jfk(byte jfk){
- if(audioTrack > 3) {audioTrack = 1;} 
-  while(audioTrack != jfk){
-    audioTrack++;
-    if(audioTrack > 3) {audioTrack = 1;}
-  }
-    audioTrack++;
-    prog = 0;
-  }
 
 //void startCountdown(int HOURS, int MINUTES, int SECONDS){
 // action = 8; setdigits(0, 0, 1);setdigits(0, 1, 6);setdigits(0, 4, 3);setdigits(0, 5, 3);verbold[0] = 1; verbold[1] = 6; verb = 16; noun = 33; nounold[0] = 3; nounold[1] = 3; 
