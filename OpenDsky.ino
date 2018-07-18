@@ -87,6 +87,8 @@ void setup() {
   Serial.begin(9600);
   player.begin(Serial);
   //Light up PRO, NOUN, VERB and NO ATT
+    startUp();
+
   for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index); lampit(100,100,100, 16);}
   player.volume(30);
  }
@@ -512,7 +514,7 @@ void processkey1() {
   lampit(0,150,0, 2);
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
   if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
-  if((keyVal == 15) && (fresh == 1)) {
+  if((keyVal == 15 || keyVal == 11) && (fresh == 1)) {
   fresh = 0;
   verb = ((verbnew[0] * 10) + (verbnew[1]));
   if((verb != 16) && (verb != 21) && (verb != 35) && (verb != 0)) {error = 1;verb = ((verbold[0] * 10) + verbold[1]);}
@@ -533,7 +535,7 @@ void processkey2() {
 
   if(keyVal == oldkey){fresh = 0;} else { fresh = 1; oldkey = keyVal; 
 if((error == 1) && (keyVal == 17) && (fresh == 1)){error = 0;lampit(0,0,0, 13); fresh = 0;} //resrt reeor
-  if((keyVal == 15) && (fresh == 1)) {fresh = 0;
+  if((keyVal == 15 || keyVal == 10) && (fresh == 1)) {fresh = 0;
     noun = ((nounnew[0] * 10) + (nounnew[1]));fresh = 0;
   if((noun != 17) && (noun != 18) && (noun != 19) && (noun != 36) && (noun != 33) && (noun != 37) && (noun != 46) && (noun != 43) && (noun != 68) && (noun != 87)&& (noun != 0)) {error = 1; noun = ((nounold[0] * 10) + nounold[1]);  }
   else {
@@ -992,6 +994,38 @@ float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
       prog=11;
     }
 
+void startUp() {
+  for (int index = 0; index < 4; index++){lampit(0,0,0, index);delay(200);lampit(0,150,0, index);}
+  for (int index = 4; index < 18; index++) {
+    if(index < 11){lampit(100,100,0, index);}
+    if(index <= 12){lampit(100,100,100, 23-index);}
+    delay(50);
+  }
+//for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
+  for (int index = 0; index < 4; index++) {
+    for (int indexb = 0; indexb < 6; indexb++){
+      setdigits(index,indexb,8);
+      delay(25);
+    }
+  }
+  delay(1000); 
+  for (int index = 3; index < 11; index++) {lampit(0,0,0, index);}
+  for (int index = 11; index < 18; index++) {if(index != 16){lampit(0,0,0, index);}}
+  for (int index = 0; index < 4; index++) {lc.clearDisplay(index); }
+  verbnew[0] = verbold[0]; verbnew[1] = verbold[1];
+  verb = ((verbold[0] * 10) + verbold[1]);
+  if (verb == 0) {lc.setRow(0,0,0);lc.setRow(0,1,0);}
+  else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}
+  if (prog == 0) {lc.setRow(0,2,0);lc.setRow(0,3,0);}
+  else{setdigits(0, 0,prognew[0]);setdigits(0, 1,prognew[1]);}
+   if (noun == 0) {lc.setRow(0,4,0);lc.setRow(0,5,0);}
+  else{setdigits(0, 4,nounnew[0]);setdigits(0, 5,nounnew[1]);}
+  
+  keyVal = 20;
+  mode = 0;
+  validateAct(); 
+  }
+
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
            //    ####################    T H E   B O N E   Y A R D    ##########################      //
           /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1333,5 +1367,4 @@ float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
 // }
 //}
 //
-
 
