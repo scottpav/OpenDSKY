@@ -19,3 +19,5 @@ Modified code from https://opendsky.backerkit.com/
 > Adafruit NeoPixel Library: https://github.com/adafruit/Adafruit_NeoPixel
 
 > Led Control: https://github.com/wayoda/LedControl
+
+> RTCLib: https://github.com/adafruit/RTClib
