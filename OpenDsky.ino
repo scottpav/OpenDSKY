@@ -1,5 +1,4 @@
 #include <DFPlayerMini_Fast.h>
-
 #include <Adafruit_NeoPixel.h>
 #include <math.h>
 #include<Wire.h>
@@ -203,7 +202,6 @@ void mode4() {
     for (int index = 3; index < 18; index++) {if(index != 16){lampit(0,0,0, index);}}
   }
 
-
 void action1() {
   readimuGyro();
 }
@@ -220,52 +218,10 @@ void compTime() {
     if(toggle == 0) {lampit(0,0,0, 3);} else {lampit(0,150,0, 3);}
 }
 
-//void action3(){     //Read GPS POS & ALT
-//  digitalWrite(RELAY_PIN, HIGH);
-//  delay(20);
-//  useInterrupt(true);
-//  delay(1000);
-//  Serial.println(PMTK_Q_RELEASE);
-//  int lat = 0;
-//  int lon = 0;
-//  int alt = 0;
-//  delay(20);
-//  byte data[83];
-//  int index = 0;
-//  if (GPS.newNMEAreceived()) {
-//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-//      return;  // we can fail to parse a sentence in which case we should just wait for another
-//  } 
-//  if (timer > millis())  timer = millis();
-//  if (millis() - timer > 1000) { 
-//    timer = millis(); // reset the timer
-//    if (GPS.fix) {
-//      data[index] = GPS.read();
-//      delayMicroseconds(960);
-//      index++;
-//      if(index >= 72) {index = 71; }
-//      lat = GPS.latitude;
-//      lon = GPS.longitude;
-//      alt = GPS.altitude;
-//      imuval[4] = lat;
-//      imuval[5] = lon;
-//      imuval[6] = alt;
-//      digitalWrite(RELAY_PIN, LOW);
-//      setDigits();  
-//    }
-//  }
-//}
-
 void action3(){     //Read GPS
   digitalWrite(RELAY_PIN,HIGH);
   delay(20);
   byte data[83];
-  Serial.write("$PMTK314,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
-  delay(20);
-  Serial.write("$PMTK220,1000*1F");
-  delay(20);
-  Serial.write("$PMTK300,1000,0,0,0,0*1C");
-  delay(20);
   while((Serial.available()) > 0) {int x =  Serial.read(); }
   while((Serial.available()) < 1) {int x = 1; }
   delay(6);
@@ -447,144 +403,6 @@ DateTime now = rtc.now();
  noun = 19; 
 }
 
-//void action7(){     //Read GPS VEL & ALT
-// if(navActive == 0){
-//  lc.setRow(1,0,B00000000);
-//  lc.setRow(1,1,B00000000);
-//  lc.setRow(1,5,B00000000);
-//  lc.setRow(2,0,B00000000);
-//  lc.setRow(2,3,B00000000);
-//  lc.setRow(2,4,B00000000);
-//  lc.setRow(2,5,B00000000);
-//  lc.setRow(3,0,B00000000);
-// while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//  lc.setRow(1,2,B00001110);//L
-//  lc.setRow(1,3,B01110111);//A
-//  lc.setRow(1,4,B00001111);//t
-//
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//     if(keyVal == 12){
-//          lc.setRow(2,0,B01110100);
-//          wpLat = "N";
-//        }
-//        if(keyVal == 13){
-//          lc.setRow(2,0,B00100100);
-//          wpLat = "S";
-//        }
-//      if((keyVal < 10) && (count < 2)) {
-//          wpLatDDNew[count] = keyVal;
-//          setdigits(2, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(2);
-//        count = 0;
-//      }
-//   }
-// }
-//int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
-//while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLatMMNew[count] = keyVal;
-//          setdigits(3, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(3);
-//        count = 0;
-//      }
-//   }
-//  }
-//int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
-//wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
-//        lc.clearDisplay(1);
-//        lc.clearDisplay(2);
-//        lc.clearDisplay(3);
-//        lc.setRow(1,2,B00001110); //L
-//        lc.setRow(1,3,B01111110);// O
-//        lc.setRow(1,4,B01110110);//N
-// while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//     if(keyVal == 12){
-//          lc.setRow(2,0,B01110100);
-//          wpLon = "W";
-//        }
-//        if(keyVal == 13){
-//          lc.setRow(2,0,B00100100);
-//          wpLon = "E";
-//        }
-//      if((keyVal < 10) && (count < 2)) {
-//          wpLonDDNew[count] = keyVal;
-//          setdigits(2, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(2);
-//        count = 0;
-//      }
-//   }
-// }
-// 
-//int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
-//while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLonMMNew[count] = keyVal;
-//          setdigits(3, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(3);
-//        lc.clearDisplay(3);
-//        count = 0;
-//      }
-//   }
-//  }
-//int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
-//wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
-//navActive = 1;
-//for(int i=2;i<4;i++) {
-//    lc.setRow(i,0,B00100100);
-//    lc.setChar(i,1,'-',false);
-//    lc.setChar(i,2,'-',false);
-//    lc.setChar(i,3,'-',false);
-//    lc.setChar(i,4,'-',false);
-//    lc.setChar(i,5,'-',false);
-//    setDigits(); 
-//    }
-// }
-//  //  executeNav();
-//}
-
 //$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
 void action7(){     //Read GPS Heading
     digitalWrite(RELAY_PIN,HIGH);
@@ -632,135 +450,6 @@ void action7(){     //Read GPS Heading
    setDigits(); 
 }
 
-
-//void executeNav(){ 
-//  if (!GPS.fix) {
-//   lampit(255,0,0, 16);
-//   lampit(255,200,59, 15);
-//  }
-//  Serial.println(wpLat + "" + wpLatitude + " " + wpLon + wpLongitude);
-// if (GPS.newNMEAreceived()) {
-//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
-//      return;  // we can fail to parse a sentence in which case we should just wait for another
-//  }
-//  if (timer > millis())  timer = millis();
-//  if (millis() - timer > 2000) { 
-//    timer = millis(); // reset the timer
-//    if (GPS.fix) {
-//       compAct(); 
-//      lampit(0,0,0, 16);
-//      lampit(0,0,0, 15);
-//      lampit(0,150,0, 9);
-//      lampit(0,150,0, 10);
-//      wpGPS = input2string (wpLat, wpLatitude, wpLon, wpLongitude);
-//      here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
-//      range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
-//      rangeft = range*5280;                  // convert the range to feet
-//      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)));  // Determins the angle in radians of the bearing to desired location
-//      float rangeDisplay = range;
-//      float bearingDisplay = bearing * 100 ;
-//      if(range < 1){
-//        rangeDisplay = rangeft;
-//      }
-//      if(bearingDisplay < 0){
-//        bearingDisplay = bearingDisplay + 359;
-//      }
-//       if(bearingDisplay == 0){
-//        bearingDisplay = 360;
-//      }
-//  delay(20);
-//      imuval[4] = GPS.angle;
-//      imuval[5] = bearingDisplay;
-//      imuval[6] = rangeDisplay;
-//      setDigits(); 
-//    }
-//  }
-//}
-
-//void action8() { // T-Minus countdown timer
-//DateTime now = rtc.now();
-//  int NHR = 0;
-//  int NMI = 0;
-//  int NSE = 0;
-//  unsigned long currentMillis = millis();
-//  while(keyVal == 15){ keyVal = readkb();}
-//  while(keyVal != 15){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//     if(keyVal == 12) {NHR++;}
-//     if(keyVal == 13) {NHR--;}
-//     if( NHR > 23) {NHR = 0;}
-//     if(NHR < 0) {NHR = 23;}
-//   }
-//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-//   if (timer > millis())  timer = millis();
-//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-//        timer = millis(); // reset the timer
-//      // if the LED is off turn it on and vice-versa:
-//      if (displayOn) {      // this makes Pin2 blinks off-on
-//        lc.clearDisplay(1);
-//        displayOn = false;
-//        } 
-//      else {
-//        displayOn = true;
-//        setDigits();
-//      }
-//    }
-//  }
-//  while(keyVal == 15){ keyVal = readkb();}
-//  while(keyVal != 15){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//    oldkey = keyVal;
-//   if(keyVal == 12) {NMI++;}
-//   if(keyVal == 13) {NMI--;}
-//   if( NMI > 59) {NMI = 0;}
-//   if(NMI < 0) {NMI = 59;} 
-//   }
-//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-// if (timer > millis())  timer = millis();
-//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-//        timer = millis(); // reset the timer
-//      // if the LED is off turn it on and vice-versa:
-//      if (displayOn) {      // this makes Pin2 blinks off-on
-//        lc.clearDisplay(2);
-//        displayOn = false;
-//        } 
-//      else {
-//        displayOn = true;
-//        setDigits();
-//      } 
-//    }
-//  } 
-//  while(keyVal == 15){ keyVal = readkb();}
-//  while(keyVal != 15){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//    oldkey = keyVal;
-//   if(keyVal == 12) {NSE++;}
-//   if(keyVal == 13) {NSE--;} 
-//   if( NSE > 59) {NSE = 0;}
-//   if(NSE < 0) {NSE = 59;}
-//   }
-//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
-//   if (timer > millis())  timer = millis();
-//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
-//        timer = millis(); // reset the timer
-//      // if the LED is off turn it on and vice-versa:
-//      if (displayOn) {      // this makes Pin2 blinks off-on
-//        lc.clearDisplay(3);
-//        displayOn = false;
-//        } 
-//      else {
-//        displayOn = true;
-//        setDigits();
-//      }
-//    }
-//  }
-// startCountdown(NHR , NMI , NSE);
-//}
-
 void action8(){
   readimuAccel();
 }
@@ -774,7 +463,6 @@ void action10() //V16N68 Apollo 11 Decent & Landing
   eagleHasLanded();
   lunarDecentSim();
 }
-
 
 void mode11() {
  compAct(); 
@@ -891,14 +579,17 @@ int randNumb = random(10, 60);
     if ((randNumb == 11) || (randNumb == 20)) {lampit(255,193,8,10);}
     else {lampit(0,0,0,10);}
 }
+
 void lampit(byte r, byte g, byte b , int lamp) {
     pixels.setPixelColor(lamp, pixels.Color(r,g,b)); // Set it the way we like it.
     pixels.show(); // This sends the updated pixel color to the hardware.
   
 }
+
 void setdigits(byte maxim, byte digit, byte value){
    lc.setDigit(maxim,digit,value,false);
 }
+
 void flashkr() {
    if(toggle == 0) {lampit(100,100,100, 14);} else {lampit(0,0,0, 14);}
    
@@ -1063,9 +754,7 @@ void readimuAccel(){
     if(toggle == 1)
     {
       lampit(100,100,0,6);
-    }
-     
-        
+    }    
   /////////////////////////
   //     1201 Alarm     //
   /////////////////////// 
@@ -1145,7 +834,6 @@ void readimuAccel(){
   /////////////////////////
   //   END ALT & VEL    //
  ////////////////////////   
-
       if(toggle == 0 && i < totalSeconds + 10)
       {
         lampit(0,0,0,6);
@@ -1201,6 +889,413 @@ void readimuAccel(){
  }
  }
 
+ String int2fw (int x, int n) {
+    // returns a string of length n (fixed-width)
+    String s = (String) x;
+    while (s.length() < n) {
+    s = "0" + s;
+    }
+    return s;
+    }
+
+//Input DDDD.MMMM
+String gps2string (String lat, float latitude, String lon, float longitude) {
+    // lattitude = 4021.6393
+    // returns "Ndd mm.mmm, Wddd mm.mmm";
+    int dd = (int) latitude/100; // 40
+    int mm = (int) latitude % 100; // 21
+    int mmm = (int) round(1000 * (latitude - floor(latitude)));//639
+    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    dd = (int) longitude/100;
+    mm = (int) longitude % 100;
+    mmm = (int) round(1000 * (longitude - floor(longitude)));
+    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    String myString = gps2lat + ", " + gps2lon;
+    return myString;
+    };
+
+//Input -> DD.MMmmm
+String input2string (String lat, float latitude, String lon, float longitude) {
+    // lattitude = 40.36065
+    // returns "Ndd mm.mmm, Wddd mm.mmm";
+    int dd = (int) floor(latitude);
+    int mm = ((float) latitude - floor(latitude)) * 60; // 21
+    int mmm = ((((float) latitude - floor(latitude)) * 60) - mm) * 1000; //639
+    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    dd = (int) floor(longitude);
+    mm = ((float) latitude - floor(longitude)) * 60; // 21
+    mmm = ((((float) longitude - floor(longitude)) * 60) - mm) * 1000; //639
+    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
+    String myString = gps2lat + ", " + gps2lon;
+    return myString;
+    };
+     
+float string2lat (String myString) {
+    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
+    float lat = ((myString.charAt(1) - '0') * 10.0) + (myString.charAt(2) - '0') * 1.0 + ((myString.charAt(4) - '0') / 6.0) + ((myString.charAt(5) - '0') / 60.0) + ((myString.charAt(7) - '0') / 600.0) + ((myString.charAt(8) - '0') / 6000.0) + ((myString.charAt(9) - '0') / 60000.0);
+    //Serial.print("float lat: ");
+    //Serial.println(lat);
+    lat *= deg2rad;
+    if (myString.charAt(0) == 'S')
+    lat *= -1; // Correct for hemisphere
+    return lat;
+    };
+     
+float string2lon (String myString) {
+    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
+    float lon = ((myString.charAt(13) - '0') * 100.0) + ((myString.charAt(14) - '0') * 10.0) + (myString.charAt(15) - '0') * 1.0 + ((myString.charAt(17) - '0') / 6.0) + ((myString.charAt(18) - '0') / 60.0) + ((myString.charAt(20) - '0') / 600.0) + ((myString.charAt(21) - '0') / 6000.0) + ((myString.charAt(22) - '0') / 60000.0);
+    //Serial.print("float lon: ");
+    //Serial.println(lon);
+    lon *= deg2rad;
+    if (myString.charAt(12) == 'W')
+    lon *= -1; // Correct for hemisphere
+    return lon;
+    };
+     
+float haversine (float lat1, float lon1, float lat2, float lon2) {
+    // returns the great-circle distance between two points (radians) on a sphere
+    float h = sq((sin((lat1 - lat2) / 2.0))) + (cos(lat1) * cos(lat2) * sq((sin((lon1 - lon2) / 2.0))));
+    float d = 2.0 * rEarth * asin (sqrt(h));
+    //Serial.println(d);
+    return d;
+    };
+    
+float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
+    // returns the great-circle initial bearing between two points (radians) on a sphere
+    float y = sin(lon1 - lon2) * cos(lat2);
+    float x = cos(lat1) * sin(lat2) - sin(lat1)*cos(lat2)*cos(lon1-lon2);
+    float b = atan2(y,x);
+    return b;
+    };
+    
+ void weChoose()
+    {
+      player.play(4);   
+      prog=11;   
+    }
+    
+ void eagleHasLanded()
+    {
+      player.play(1);      
+      prog=11;
+    }
+
+ void playAlarm()
+    {
+      player.play(3);  
+      prog=11;
+    }
+    
+ void haveAProblem()
+    {
+      player.play(2);
+      prog=11;
+    }
+
+      ////////////////////////////////////////////////////////////////////////////////////////////////////////
+           //    ####################    T H E   B O N E   Y A R D    ##########################      //
+          /////////////////////////////////////////////////////////////////////////////////////////////
+
+//void action7(){     //Read GPS VEL & ALT
+// if(navActive == 0){
+//  lc.setRow(1,0,B00000000);
+//  lc.setRow(1,1,B00000000);
+//  lc.setRow(1,5,B00000000);
+//  lc.setRow(2,0,B00000000);
+//  lc.setRow(2,3,B00000000);
+//  lc.setRow(2,4,B00000000);
+//  lc.setRow(2,5,B00000000);
+//  lc.setRow(3,0,B00000000);
+// while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//  lc.setRow(1,2,B00001110);//L
+//  lc.setRow(1,3,B01110111);//A
+//  lc.setRow(1,4,B00001111);//t
+//
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12){
+//          lc.setRow(2,0,B01110100);
+//          wpLat = "N";
+//        }
+//        if(keyVal == 13){
+//          lc.setRow(2,0,B00100100);
+//          wpLat = "S";
+//        }
+//      if((keyVal < 10) && (count < 2)) {
+//          wpLatDDNew[count] = keyVal;
+//          setdigits(2, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(2);
+//        count = 0;
+//      }
+//   }
+// }
+//int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
+//while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//      if((keyVal < 10) && (count < 5)) {
+//          wpLatMMNew[count] = keyVal;
+//          setdigits(3, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(3);
+//        count = 0;
+//      }
+//   }
+//  }
+//int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
+//wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
+//        lc.clearDisplay(1);
+//        lc.clearDisplay(2);
+//        lc.clearDisplay(3);
+//        lc.setRow(1,2,B00001110); //L
+//        lc.setRow(1,3,B01111110);// O
+//        lc.setRow(1,4,B01110110);//N
+// while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12){
+//          lc.setRow(2,0,B01110100);
+//          wpLon = "W";
+//        }
+//        if(keyVal == 13){
+//          lc.setRow(2,0,B00100100);
+//          wpLon = "E";
+//        }
+//      if((keyVal < 10) && (count < 2)) {
+//          wpLonDDNew[count] = keyVal;
+//          setdigits(2, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(2);
+//        count = 0;
+//      }
+//   }
+// }
+// 
+//int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
+//while(keyVal == 15){ keyVal = readkb();}
+// count = 0; fresh = 0;
+//  while(keyVal != 15 && fresh == 0){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//      if((keyVal < 10) && (count < 5)) {
+//          wpLonMMNew[count] = keyVal;
+//          setdigits(3, count+1, keyVal);
+//          count++;
+//      }
+//      if(keyVal == 18) {
+//        fresh = 1;
+//      }
+//      if(fresh == 1){
+//        lc.clearDisplay(3);
+//        lc.clearDisplay(3);
+//        count = 0;
+//      }
+//   }
+//  }
+//int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
+//wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
+//navActive = 1;
+//for(int i=2;i<4;i++) {
+//    lc.setRow(i,0,B00100100);
+//    lc.setChar(i,1,'-',false);
+//    lc.setChar(i,2,'-',false);
+//    lc.setChar(i,3,'-',false);
+//    lc.setChar(i,4,'-',false);
+//    lc.setChar(i,5,'-',false);
+//    setDigits(); 
+//    }
+// }
+//  //  executeNav();
+//}
+//void action3(){     //Read GPS POS & ALT
+//  digitalWrite(RELAY_PIN, HIGH);
+//  delay(20);
+//  useInterrupt(true);
+//  delay(1000);
+//  Serial.println(PMTK_Q_RELEASE);
+//  int lat = 0;
+//  int lon = 0;
+//  int alt = 0;
+//  delay(20);
+//  byte data[83];
+//  int index = 0;
+//  if (GPS.newNMEAreceived()) {
+//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+//      return;  // we can fail to parse a sentence in which case we should just wait for another
+//  } 
+//  if (timer > millis())  timer = millis();
+//  if (millis() - timer > 1000) { 
+//    timer = millis(); // reset the timer
+//    if (GPS.fix) {
+//      data[index] = GPS.read();
+//      delayMicroseconds(960);
+//      index++;
+//      if(index >= 72) {index = 71; }
+//      lat = GPS.latitude;
+//      lon = GPS.longitude;
+//      alt = GPS.altitude;
+//      imuval[4] = lat;
+//      imuval[5] = lon;
+//      imuval[6] = alt;
+//      digitalWrite(RELAY_PIN, LOW);
+//      setDigits();  
+//    }
+//  }
+//}
+
+//void executeNav(){ 
+//  if (!GPS.fix) {
+//   lampit(255,0,0, 16);
+//   lampit(255,200,59, 15);
+//  }
+//  Serial.println(wpLat + "" + wpLatitude + " " + wpLon + wpLongitude);
+// if (GPS.newNMEAreceived()) {
+//    if (!GPS.parse(GPS.lastNMEA()))   // this also sets the newNMEAreceived() flag to false
+//      return;  // we can fail to parse a sentence in which case we should just wait for another
+//  }
+//  if (timer > millis())  timer = millis();
+//  if (millis() - timer > 2000) { 
+//    timer = millis(); // reset the timer
+//    if (GPS.fix) {
+//       compAct(); 
+//      lampit(0,0,0, 16);
+//      lampit(0,0,0, 15);
+//      lampit(0,150,0, 9);
+//      lampit(0,150,0, 10);
+//      wpGPS = input2string (wpLat, wpLatitude, wpLon, wpLongitude);
+//      here = gps2string ((String) GPS.lat, GPS.latitude, (String) GPS.lon, GPS.longitude);
+//      range = (haversine(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)))*0.000621371;  // Miles ("*0.000621371 converted form meters to miles)
+//      rangeft = range*5280;                  // convert the range to feet
+//      bearing = (bearingcalc(string2lat(here), string2lon(here), string2lat(wpGPS), string2lon(wpGPS)));  // Determins the angle in radians of the bearing to desired location
+//      float rangeDisplay = range;
+//      float bearingDisplay = bearing * 100 ;
+//      if(range < 1){
+//        rangeDisplay = rangeft;
+//      }
+//      if(bearingDisplay < 0){
+//        bearingDisplay = bearingDisplay + 359;
+//      }
+//       if(bearingDisplay == 0){
+//        bearingDisplay = 360;
+//      }
+//  delay(20);
+//      imuval[4] = GPS.angle;
+//      imuval[5] = bearingDisplay;
+//      imuval[6] = rangeDisplay;
+//      setDigits(); 
+//    }
+//  }
+//}
+
+//void action8() { // T-Minus countdown timer
+//DateTime now = rtc.now();
+//  int NHR = 0;
+//  int NMI = 0;
+//  int NSE = 0;
+//  unsigned long currentMillis = millis();
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//     oldkey = keyVal;
+//     if(keyVal == 12) {NHR++;}
+//     if(keyVal == 13) {NHR--;}
+//     if( NHR > 23) {NHR = 0;}
+//     if(NHR < 0) {NHR = 23;}
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+//   if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(1);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      }
+//    }
+//  }
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//    oldkey = keyVal;
+//   if(keyVal == 12) {NMI++;}
+//   if(keyVal == 13) {NMI--;}
+//   if( NMI > 59) {NMI = 0;}
+//   if(NMI < 0) {NMI = 59;} 
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+// if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(2);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      } 
+//    }
+//  } 
+//  while(keyVal == 15){ keyVal = readkb();}
+//  while(keyVal != 15){
+//   keyVal = readkb();
+//   if(keyVal != oldkey) {
+//    oldkey = keyVal;
+//   if(keyVal == 12) {NSE++;}
+//   if(keyVal == 13) {NSE--;} 
+//   if( NSE > 59) {NSE = 0;}
+//   if(NSE < 0) {NSE = 59;}
+//   }
+//   imuval[4] = NHR; imuval[5] =  NMI; imuval[6] = (NSE);
+//   if (timer > millis())  timer = millis();
+//      if (millis() - timer >= 200) {    // save the last time you blinked the LED
+//        timer = millis(); // reset the timer
+//      // if the LED is off turn it on and vice-versa:
+//      if (displayOn) {      // this makes Pin2 blinks off-on
+//        lc.clearDisplay(3);
+//        displayOn = false;
+//        } 
+//      else {
+//        displayOn = true;
+//        setDigits();
+//      }
+//    }
+//  }
+// startCountdown(NHR , NMI , NSE);
+//}
 //void startCountdown(int HOURS, int MINUTES, int SECONDS){
 // action = 8; setdigits(0, 0, 1);setdigits(0, 1, 6);setdigits(0, 4, 3);setdigits(0, 5, 3);verbold[0] = 1; verbold[1] = 6; verb = 16; noun = 33; nounold[0] = 3; nounold[1] = 3; 
 // int totalSeconds = (HOURS * 60) * 60 + (MINUTES * 60) + SECONDS;
@@ -1240,104 +1335,3 @@ void readimuAccel(){
 //
 
 
- String int2fw (int x, int n) {
-    // returns a string of length n (fixed-width)
-    String s = (String) x;
-    while (s.length() < n) {
-    s = "0" + s;
-    }
-    return s;
-    }
-//Input DDDD.MMMM
-    String gps2string (String lat, float latitude, String lon, float longitude) {
-    // lattitude = 4021.6393
-    // returns "Ndd mm.mmm, Wddd mm.mmm";
-    int dd = (int) latitude/100; // 40
-    int mm = (int) latitude % 100; // 21
-    int mmm = (int) round(1000 * (latitude - floor(latitude)));//639
-    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    dd = (int) longitude/100;
-    mm = (int) longitude % 100;
-    mmm = (int) round(1000 * (longitude - floor(longitude)));
-    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    String myString = gps2lat + ", " + gps2lon;
-    return myString;
-    };
-
-//Input -> DD.MMmmm
-    String input2string (String lat, float latitude, String lon, float longitude) {
-    // lattitude = 40.36065
-    // returns "Ndd mm.mmm, Wddd mm.mmm";
-    int dd = (int) floor(latitude);
-    int mm = ((float) latitude - floor(latitude)) * 60; // 21
-    int mmm = ((((float) latitude - floor(latitude)) * 60) - mm) * 1000; //639
-    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    dd = (int) floor(longitude);
-    mm = ((float) latitude - floor(longitude)) * 60; // 21
-    mmm = ((((float) longitude - floor(longitude)) * 60) - mm) * 1000; //639
-    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    String myString = gps2lat + ", " + gps2lon;
-    return myString;
-    };
-     
-    float string2lat (String myString) {
-    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
-    float lat = ((myString.charAt(1) - '0') * 10.0) + (myString.charAt(2) - '0') * 1.0 + ((myString.charAt(4) - '0') / 6.0) + ((myString.charAt(5) - '0') / 60.0) + ((myString.charAt(7) - '0') / 600.0) + ((myString.charAt(8) - '0') / 6000.0) + ((myString.charAt(9) - '0') / 60000.0);
-    //Serial.print("float lat: ");
-    //Serial.println(lat);
-    lat *= deg2rad;
-    if (myString.charAt(0) == 'S')
-    lat *= -1; // Correct for hemisphere
-    return lat;
-    };
-     
-    float string2lon (String myString) {
-    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
-    float lon = ((myString.charAt(13) - '0') * 100.0) + ((myString.charAt(14) - '0') * 10.0) + (myString.charAt(15) - '0') * 1.0 + ((myString.charAt(17) - '0') / 6.0) + ((myString.charAt(18) - '0') / 60.0) + ((myString.charAt(20) - '0') / 600.0) + ((myString.charAt(21) - '0') / 6000.0) + ((myString.charAt(22) - '0') / 60000.0);
-    //Serial.print("float lon: ");
-    //Serial.println(lon);
-    lon *= deg2rad;
-    if (myString.charAt(12) == 'W')
-    lon *= -1; // Correct for hemisphere
-    return lon;
-    };
-     
-    float haversine (float lat1, float lon1, float lat2, float lon2) {
-    // returns the great-circle distance between two points (radians) on a sphere
-    float h = sq((sin((lat1 - lat2) / 2.0))) + (cos(lat1) * cos(lat2) * sq((sin((lon1 - lon2) / 2.0))));
-    float d = 2.0 * rEarth * asin (sqrt(h));
-    //Serial.println(d);
-    return d;
-    };
-    
-    float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
-    // returns the great-circle initial bearing between two points (radians) on a sphere
-    float y = sin(lon1 - lon2) * cos(lat2);
-    float x = cos(lat1) * sin(lat2) - sin(lat1)*cos(lat2)*cos(lon1-lon2);
-    float b = atan2(y,x);
-    return b;
-    };
-    
-     void weChoose()
-    {
-      player.play(4);   
-      prog=11;   
-    }
-    
-     void eagleHasLanded()
-    {
-      player.play(1);      
-      prog=11;
-    }
-
-     void playAlarm()
-    {
-      player.play(3);  
-      prog=11;
-    }
-    
-    void haveAProblem()
-    {
-      player.play(2);
-      prog=11;
-    }
