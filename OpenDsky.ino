@@ -223,7 +223,7 @@ void compTime() {
 void action3(){     //Read GPS
   digitalWrite(7,HIGH);
   delay(20);
-   byte data[83];
+  byte data[83];
   while((Serial.available()) > 0) {int x =  Serial.read(); }
   while((Serial.available()) < 1) {int x = 1; }
   delay(6);
@@ -258,6 +258,7 @@ void action3(){     //Read GPS
    digitalWrite(7,LOW);
    setDigits();  
 }
+
 
 void action4() { // IMU XYZ Delta
   imu_1202(); 
@@ -600,7 +601,7 @@ void validateAct(){
  if(verb == 35) {mode = 4; newAct = 0;}// Lamp Test
  else if((verb == 16) && (noun == 17)) {action = 1;newAct = 0;}//Display IMU Gyro
 else if((verb == 16) && (noun == 36)) {action = 2;newAct = 0;}//Display RTC Time 
- else if((verb == 16) && (noun == 43)) {action = 3;newAct = 0;count = 0;}//Display current GPS
+ else if((verb == 16) && (noun == 43)) {action = 3;newAct = 0;}//Display current GPS
   else if((verb == 16) && (noun == 87)) {action = 4;newAct = 0;}//Display IMU With 1202
  else if((verb == 21) && (noun == 36)) {action = 5;newAct = 0;}//set time
  else if((verb == 21) && (noun == 37)) {action = 6;newAct = 0;}//set date
