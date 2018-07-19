@@ -221,9 +221,9 @@ void compTime() {
 }
 
 void action3(){     //Read GPS
-  digitalWrite(RELAY_PIN,HIGH);
+  digitalWrite(7,HIGH);
   delay(20);
-  byte data[83];
+   byte data[83];
   while((Serial.available()) > 0) {int x =  Serial.read(); }
   while((Serial.available()) < 1) {int x = 1; }
   delay(6);
@@ -237,8 +237,6 @@ void action3(){     //Read GPS
   int lat = 0;
   int lon = 0;
   int alt = 0;
-//                   18         28  30          41          52                 70   
-//$GPGGA,033410.000, 2232.1745, N,  11401.1920, E,1,07,1.1, 107.14,M,0.00,M,,*64
   if (count < 10){
     count++;
  lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
@@ -252,14 +250,12 @@ void action3(){     //Read GPS
  alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
   }
   if (count > 25) {count = 0;}
-  //N == 78
  if (data[28] != 78) {lat = ((lat - (lat + lat)));}
-  //E === 69
  if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
    imuval[4] = lat;
    imuval[5] = lon;
    imuval[6] = alt;
-   digitalWrite(RELAY_PIN,LOW);
+   digitalWrite(7,LOW);
    setDigits();  
 }
 
