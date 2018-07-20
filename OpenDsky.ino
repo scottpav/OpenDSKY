@@ -52,6 +52,7 @@ byte oldmode = 0;
 bool toggle = 0;
 byte togcount = 0;
 bool newAct = 0;
+bool gpsFix = 0;
 boolean usingInterrupt = false;
 
 byte wpLatDDNew[2];
@@ -221,6 +222,11 @@ void compTime() {
 }
 
 void action3(){     //Read GPS
+  gpsStatus();
+  if(gpsFix == 1){
+     lampit(0,0,0, 8);
+     lampit(100,100,0,9);
+     lampit(100,100,0,10);
   digitalWrite(7,HIGH);
   delay(20);
   byte data[83];
@@ -257,6 +263,7 @@ void action3(){     //Read GPS
    imuval[6] = alt;
    digitalWrite(7,LOW);
    setDigits();  
+  }
 }
 
 
@@ -404,49 +411,32 @@ DateTime now = rtc.now();
 
 //$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
 void action7(){     //Read GPS Heading
-    digitalWrite(RELAY_PIN,HIGH);
+ digitalWrite(7,HIGH);
   delay(20);
-  byte data[151];
-  Serial.write("$PMTK314,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0*28");
-  delay(20);
-  Serial.write("$PMTK220,1000*1F");
-  delay(20);
-  Serial.write("$PMTK300,1000,0,0,0,0*1C");
-  delay(20);
+  byte data[273];
   while((Serial.available()) > 0) {int x =  Serial.read(); }
   while((Serial.available()) < 1) {int x = 1; }
   delay(6);
   int index = 0;
   while(Serial.available() > 0){
-  data[index+71] = Serial.read();
-  delayMicroseconds(1000);
+  data[index] = Serial.read();
+  delayMicroseconds(960);
   index++;
-  if(index >= 141) {index = 140; }
   }
-  int lat = 0;
-  int lon = 0;
   int heading = 0;
-  if (count < 10){
-    count++;
- lat = (((data[91] - 48) * 1000) + ((data[92] -48) * 100) + ((data[93] - 48) * 10) + ((data[94] - 48)));
- lon = (((data[103] - 48) * 10000) + ((data[104] - 48) * 1000) + ((data[105] -48) * 100) + ((data[106] - 48) * 10) + ((data[107] - 48)));
- heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
-  }
-  else {
-    count++;
- lat = (((data[96] - 48) * 10000) + ((data[97] - 48) * 1000) + ((data[98] -48) * 100) + ((data[99] - 48) * 10) + ((data[100] - 48)));
- lon = (((data[109] - 48) * 10000) + ((data[110] - 48) * 1000) + ((data[111] -48) * 100) + ((data[112] - 48) * 10) + ((data[113] - 48)));
- heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
-  }
- if (count > 25) {count = 0;}
- if (data[101] != 78) {lat = ((lat - (lat + lat)));}
- if (data[115] != 69) {lon = ((lon - (lon + lon)));} 
- heading = (((data[122] -48) * 100) + ((data[123] - 48) * 10) + ((data[124] - 48)));
-   imuval[4] = heading; 
-   imuval[5] = lat;
-   imuval[6] = lon;
-   digitalWrite(RELAY_PIN,LOW);
-   setDigits(); 
+  int bearing = 0;
+  int spd = 0;
+   
+   if(data[index] == 36 && data[index + 5] == 67){
+     heading = (((data[43] -48) * 100) + ((data[44] - 48) * 10) + ((data[45] - 48)));
+     //lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
+     spd = (((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
+    } 
+   imuval[4] = heading;
+   imuval[5] = bearing;
+   imuval[6] = spd;
+   digitalWrite(7,LOW);
+   setDigits();  
 }
 
 void action8(){
@@ -1023,6 +1013,31 @@ void startUp() {
   validateAct(); 
   }
 
+ void gpsStatus(){     //Read GPS Heading
+  digitalWrite(7,HIGH);
+  delay(20);
+  byte data[273];
+  while((Serial.available()) > 0) {int x =  Serial.read(); }
+  while((Serial.available()) < 1) {int x = 1; }
+  delay(6);
+  int index = 0;
+  while(Serial.available() > 0){
+  data[index] = Serial.read();
+  delayMicroseconds(960);
+  index++;
+  if(data[index] == 36 && data[index + 4] == 83 && data[index + 5] == 65){
+     if((data[index + 9] -48) > 1){
+      gpsFix = 1;
+     }
+     else{
+      gpsFix = 0;
+      lampit(100,100,0, 8);
+     }
+     digitalWrite(7,LOW);
+    }
+  }
+}
+
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
            //    ####################    T H E   B O N E   Y A R D    ##########################      //
           /////////////////////////////////////////////////////////////////////////////////////////////
@@ -1364,4 +1379,3 @@ void startUp() {
 // }
 //}
 //
-
