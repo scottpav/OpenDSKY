@@ -222,11 +222,10 @@ void compTime() {
 }
 
 void action3(){     //Read GPS
-  gpsStatus();
+  while(gpsFix == 0){
+  gpsBegin();
+  }
   if(gpsFix == 1){
-     lampit(0,0,0, 8);
-     lampit(100,100,0,9);
-     lampit(100,100,0,10);
   digitalWrite(7,HIGH);
   delay(20);
   byte data[83];
@@ -437,6 +436,7 @@ void action7(){     //Read GPS Heading
    imuval[6] = spd;
    digitalWrite(7,LOW);
    setDigits();  
+  delay(500);
 }
 
 void action8(){
@@ -1013,7 +1013,7 @@ void startUp() {
   validateAct(); 
   }
 
- void gpsStatus(){     //Read GPS Heading
+ void gpsBegin(){     //Read GPS Heading
   digitalWrite(7,HIGH);
   delay(20);
   byte data[273];
@@ -1028,14 +1028,17 @@ void startUp() {
   if(data[index] == 36 && data[index + 4] == 83 && data[index + 5] == 65){
      if((data[index + 9] -48) > 1){
       gpsFix = 1;
+      lampit(0,0,0,8);
+      lampit(100,100,0,9);
+      lampit(100,100,0,10);
      }
      else{
       gpsFix = 0;
       lampit(100,100,0, 8);
      }
-     digitalWrite(7,LOW);
     }
   }
+   digitalWrite(7,LOW);
 }
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
