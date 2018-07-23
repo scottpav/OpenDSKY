@@ -4,34 +4,26 @@
 #include<Wire.h>
 #include "RTClib.h"
 #include "LedControl.h"
+#include <NMEAGPS.h>
+#include <Streamers.h>
+#include <GPSport.h>
+
 #define PIN            6
 #define RELAY_PIN      7
 #define NUMPIXELS      18
-#define GPSECHO  false
 #define Start_Byte 0x7E
 #define Version_Byte 0xFF
 #define Command_Length 0x06
 #define End_Byte 0xEF
 #define Acknowledge 0x00 //Returns info with command 0x41 [0x01: info, 0x00: no info]
-#include <NMEAGPS.h>
-#include <Streamers.h>
-#define gpsPort Serial
-#define GPS_PORT_NAME "Serial"
-static NMEAGPS  gps;
-static gps_fix  fix;
+
+
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 DFPlayerMini_Fast player;
 bool debug = true;
 unsigned long previousMillis = 0;   
-bool displayOn = false;     
-const float deg2rad = 0.01745329251994;
-const float rEarth = 6371000.0; //can replace with 3958.75 mi, 6370.0 km, or 3440.06 NM
-float range = 123.45;    // distance from HERE to THERE
-int rangeft = 5300;
-float bearing = 100;
-String here;             // read from GPS
 const int MPU_addr=0x69;  // I2C address of the MPU-6050
 long imuval[7];
 byte digitval[7][7];   
@@ -57,28 +49,29 @@ byte oldmode = 0;
 bool toggle = 0;
 byte togcount = 0;
 bool newAct = 0;
-bool gpsFix = 0;
-boolean usingInterrupt = false;
 int oldSecond = 0;
-byte wpLatDDNew[2];
-byte wpLatMMNew[5];
-byte wpLonDDNew[2];
-byte wpLonMMNew[5];
-float wpLatitude = 0;
+
 int lat = 0;
 int lon = 0;
 int alt = 0;
+int spd = 0;
+int hdg = 0;
+float range = 0;
 float wpLongitude = 0;
 String wpLat = "N";
 String wpLon = "W";
-String wpGPS = "N34 47.337, W86 46.537"; //Home
-
+NeoGPS::Location_t base( 34803113L, -86770706L ); 
+static NMEAGPS  gps;
+static gps_fix  fix;
 static void updateGPS( const gps_fix & fix );
 static void updateGPS( const gps_fix & fix ){
   if (fix.valid.location) {
-lat = (fix.latitude() * 100);
-lon = (fix.longitude() * 100);
-alt = fix.heading();
+    lat = (fix.latitude() * 100);
+    lon = (fix.longitude() * 100);
+    alt = fix.altitude_ft();
+    spd = fix.speed_mkn();
+    hdg = fix.heading();
+    range = fix.location.DistanceMiles( base );
     if ( fix.dateTime.seconds < 10 )
       Serial.print( '0' );
     Serial.print( fix.dateTime.seconds );
@@ -186,7 +179,7 @@ void setup() {
                         "  You should confirm this with NMEAorder.ino\n") );
   trace_header( Serial );
   Serial.flush();
-    gpsPort.begin(9600);
+  gpsPort.begin(9600);
 
  }
 
@@ -315,27 +308,37 @@ void action2() { // Reads Time from RTC
 }
 
 void compTime() {
-  lampit(0,0,0, 3);
-  delay(500);
+  if (millis() - timer > 1000) { 
+    timer = millis(); // reset the timer
     lampit(0,150,0, 3);
+  }
+    lampit(0,0,0, 3);    
 }
 
 void action3(){
- if (!fix.valid.location)
- {
-  lampit(100,100,100, 16);
-  lampit(100,100,0, 8);
- }
- else{
+   if (!fix.valid.location)
+   {
+    lampit(100,100,100, 16);
+    lampit(100,100,0, 8);
+   }
+   else{
     lampit(0,0,0, 8);
     lampit(0,0,0, 16);
     lampit(100,100,0, 9);
     lampit(100,100,0, 10);
- }
-   imuval[4] = lat;
-   imuval[5] = lon;
-   imuval[6] = alt;
-   setDigits();  
+   }
+   if (fix.dateTime.seconds > 30) {
+    imuval[4] = lat;
+    imuval[5] = lon;
+    imuval[6] = alt;
+    setDigits();  
+   }
+   else {
+    imuval[4] = hdg;
+    imuval[5] = spd;
+    imuval[6] = range;
+    setDigits();  
+   }
 }
 
 //
@@ -1002,85 +1005,6 @@ void readimuAccel(){
  }
  }
 
- String int2fw (int x, int n) {
-    // returns a string of length n (fixed-width)
-    String s = (String) x;
-    while (s.length() < n) {
-    s = "0" + s;
-    }
-    return s;
-    }
-
-//Input DDDD.MMMM
-String gps2string (String lat, float latitude, String lon, float longitude) {
-    // lattitude = 4021.6393
-    // returns "Ndd mm.mmm, Wddd mm.mmm";
-    int dd = (int) latitude/100; // 40
-    int mm = (int) latitude % 100; // 21
-    int mmm = (int) round(1000 * (latitude - floor(latitude)));//639
-    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    dd = (int) longitude/100;
-    mm = (int) longitude % 100;
-    mmm = (int) round(1000 * (longitude - floor(longitude)));
-    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    String myString = gps2lat + ", " + gps2lon;
-    return myString;
-    };
-
-//Input -> DD.MMmmm
-String input2string (String lat, float latitude, String lon, float longitude) {
-    // lattitude = 40.36065
-    // returns "Ndd mm.mmm, Wddd mm.mmm";
-    int dd = (int) floor(latitude);
-    int mm = ((float) latitude - floor(latitude)) * 60; // 21
-    int mmm = ((((float) latitude - floor(latitude)) * 60) - mm) * 1000; //639
-    String gps2lat = lat + int2fw(dd, 2) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    dd = (int) floor(longitude);
-    mm = ((float) latitude - floor(longitude)) * 60; // 21
-    mmm = ((((float) longitude - floor(longitude)) * 60) - mm) * 1000; //639
-    String gps2lon = lon + int2fw(dd, 3) + " " + int2fw(mm, 2) + "." + int2fw(mmm, 3);
-    String myString = gps2lat + ", " + gps2lon;
-    return myString;
-    };
-     
-float string2lat (String myString) {
-    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
-    float lat = ((myString.charAt(1) - '0') * 10.0) + (myString.charAt(2) - '0') * 1.0 + ((myString.charAt(4) - '0') / 6.0) + ((myString.charAt(5) - '0') / 60.0) + ((myString.charAt(7) - '0') / 600.0) + ((myString.charAt(8) - '0') / 6000.0) + ((myString.charAt(9) - '0') / 60000.0);
-    //Serial.print("float lat: ");
-    //Serial.println(lat);
-    lat *= deg2rad;
-    if (myString.charAt(0) == 'S')
-    lat *= -1; // Correct for hemisphere
-    return lat;
-    };
-     
-float string2lon (String myString) {
-    // returns radians: e.g. String myString = "N38 58.892, W076 29.177";
-    float lon = ((myString.charAt(13) - '0') * 100.0) + ((myString.charAt(14) - '0') * 10.0) + (myString.charAt(15) - '0') * 1.0 + ((myString.charAt(17) - '0') / 6.0) + ((myString.charAt(18) - '0') / 60.0) + ((myString.charAt(20) - '0') / 600.0) + ((myString.charAt(21) - '0') / 6000.0) + ((myString.charAt(22) - '0') / 60000.0);
-    //Serial.print("float lon: ");
-    //Serial.println(lon);
-    lon *= deg2rad;
-    if (myString.charAt(12) == 'W')
-    lon *= -1; // Correct for hemisphere
-    return lon;
-    };
-     
-float haversine (float lat1, float lon1, float lat2, float lon2) {
-    // returns the great-circle distance between two points (radians) on a sphere
-    float h = sq((sin((lat1 - lat2) / 2.0))) + (cos(lat1) * cos(lat2) * sq((sin((lon1 - lon2) / 2.0))));
-    float d = 2.0 * rEarth * asin (sqrt(h));
-    //Serial.println(d);
-    return d;
-    };
-    
-float bearingcalc (float lat1, float lon1, float lat2, float lon2) {
-    // returns the great-circle initial bearing between two points (radians) on a sphere
-    float y = sin(lon1 - lon2) * cos(lat2);
-    float x = cos(lat1) * sin(lat2) - sin(lat1)*cos(lat2)*cos(lon1-lon2);
-    float b = atan2(y,x);
-    return b;
-    };
-    
  void weChoose()
     {
       player.play(4);   
@@ -1137,33 +1061,6 @@ void startUp() {
   validateAct(); 
   }
 
- void gpsBegin(){     //Read GPS Heading
-  digitalWrite(7,HIGH);
-  delay(20);
-  byte data[273];
-  while((Serial.available()) > 0) {int x =  Serial.read(); }
-  while((Serial.available()) < 1) {int x = 1; }
-  delay(6);
-  int index = 0;
-  while(Serial.available() > 0){
-  data[index] = Serial.read();
-  delayMicroseconds(960);
-  index++;
-  if(data[index] == 36 && data[index + 4] == 83 && data[index + 5] == 65){
-     if((data[index + 9] -48) > 1){
-      gpsFix = 1;
-      lampit(0,0,0,8);
-      lampit(100,100,0,9);
-      lampit(100,100,0,10);
-     }
-     else{
-      gpsFix = 0;
-      lampit(100,100,0, 8);
-     }
-    }
-  }
-   digitalWrite(7,LOW);
-}
 
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
            //    ####################    T H E   B O N E   Y A R D    ##########################      //
