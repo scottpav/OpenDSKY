@@ -2,7 +2,7 @@ _This Repo contains features that are currently under development. Running this 
 
 
 # OpenDSKY
-Hardware: https://opendsky.backerkit.com/
+https://opendsky.backerkit.com/
 
 ## Available Functions
 1.  V16 N17 - Display IMU Gyro XYZ
