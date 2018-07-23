@@ -4,6 +4,7 @@
 #include<Wire.h>
 #include "RTClib.h"
 #include "LedControl.h"
+#include <MicroNMEA.h>
 #define PIN            6
 #define RELAY_PIN      7
 #define NUMPIXELS      18
@@ -13,12 +14,17 @@
 #define Command_Length 0x06
 #define End_Byte 0xEF
 #define Acknowledge 0x00 //Returns info with command 0x41 [0x01: info, 0x00: no info]
-
+#include <NMEAGPS.h>
+#include <Streamers.h>
+#define gpsPort Serial
+#define GPS_PORT_NAME "Serial"
+static NMEAGPS  gps;
+static gps_fix  fix;
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 DFPlayerMini_Fast player;
-
+bool debug = true;
 unsigned long previousMillis = 0;   
 bool displayOn = false;     
 const float deg2rad = 0.01745329251994;
@@ -60,18 +66,64 @@ byte wpLatMMNew[5];
 byte wpLonDDNew[2];
 byte wpLonMMNew[5];
 float wpLatitude = 0;
+int lat = 0;
+int lon = 0;
+int alt = 0;
 float wpLongitude = 0;
 String wpLat = "N";
 String wpLon = "W";
 String wpGPS = "N34 47.337, W86 46.537"; //Home
 
+static void updateGPS( const gps_fix & fix );
+static void updateGPS( const gps_fix & fix ){
+  if (fix.valid.location) {
+lat = (fix.latitude() * 100);
+lon = (fix.longitude() * 100);
+alt = fix.heading();
+    if ( fix.dateTime.seconds < 10 )
+      Serial.print( '0' );
+    Serial.print( fix.dateTime.seconds );
+    Serial.print( ',' );
+
+    // Serial.print( fix.latitude(), 6 ); // floating-point display
+     Serial.print( fix.latitudeL() ); // integer display
+    //printL( Serial, fix.latitudeL() ); // prints int like a float
+    Serial.print( ',' );
+    // Serial.print( fix.longitude(), 6 ); // floating-point display
+     Serial.print( fix.longitudeL() );  // integer display
+    //printL( Serial, fix.longitudeL() ); // prints int like a float
+
+    Serial.print( ',' );
+    if (fix.valid.satellites)
+      Serial.print( fix.satellites );
+
+    Serial.print( ',' );
+    Serial.print( fix.speed(), 6 );
+    Serial.print( F(" kn = ") );
+    Serial.print( fix.speed_mph(), 6 );
+    Serial.print( F(" mph") );
+
+  } else {
+    // No valid location data yet!
+    Serial.print( '?' );
+  }
+
+  Serial.println();
+}
+
+static void GPSloop();
+static void GPSloop()
+{
+  while (gps.available( gpsPort ))
+    updateGPS( gps.read() );
+}
 void setup() {
   pinMode(A0, INPUT);
   pinMode(A1, INPUT);
   pinMode(A2, INPUT);
   pinMode(A3, INPUT);
   pinMode(RELAY_PIN, OUTPUT);
-  digitalWrite(RELAY_PIN, LOW);  
+  digitalWrite(RELAY_PIN, HIGH);  
   randomSeed(analogRead(A7));
   pixels.begin();
   for(int index = 0; index < 4; index++){
@@ -92,11 +144,58 @@ void setup() {
 
   for (int index = 0; index < 3; index++){delay(300);lampit(0,150,0, index); lampit(100,100,100, 16);}
   player.volume(30);
+  
+  while (!Serial)
+    ;
+
+  Serial.print( F("NMEA.INO: started\n") );
+  Serial.print( F("Heading = ") );
+  Serial.println( sizeof(fix.heading()) );
+  Serial.print( F("  gps object size = ") );
+  Serial.println( sizeof(gps) );
+  Serial.println( F("Looking for GPS device on " GPS_PORT_NAME) );
+
+  #ifndef NMEAGPS_RECOGNIZE_ALL
+    #error You must define NMEAGPS_RECOGNIZE_ALL in NMEAGPS_cfg.h!
+  #endif
+
+  #ifdef NMEAGPS_INTERRUPT_PROCESSING
+    #error You must *NOT* define NMEAGPS_INTERRUPT_PROCESSING in NMEAGPS_cfg.h!
+  #endif
+
+  #if !defined( NMEAGPS_PARSE_GGA ) & !defined( NMEAGPS_PARSE_GLL ) & \
+      !defined( NMEAGPS_PARSE_GSA ) & !defined( NMEAGPS_PARSE_GSV ) & \
+      !defined( NMEAGPS_PARSE_RMC ) & !defined( NMEAGPS_PARSE_VTG ) & \
+      !defined( NMEAGPS_PARSE_ZDA ) & !defined( NMEAGPS_PARSE_GST )
+
+    Serial.println( F("\nWARNING: No NMEA sentences are enabled: no fix data will be displayed.") );
+
+  #else
+    if (gps.merging == NMEAGPS::NO_MERGING) {
+      Serial.print  ( F("\nWARNING: displaying data from ") );
+      Serial.print  ( gps.string_for( LAST_SENTENCE_IN_INTERVAL ) );
+      Serial.print  ( F(" sentences ONLY, and only if ") );
+      Serial.print  ( gps.string_for( LAST_SENTENCE_IN_INTERVAL ) );
+      Serial.println( F(" is enabled.\n"
+                            "  Other sentences may be parsed, but their data will not be displayed.") );
+    }
+  #endif
+
+  Serial.print  ( F("\nGPS quiet time is assumed to begin after a ") );
+  Serial.print  ( gps.string_for( LAST_SENTENCE_IN_INTERVAL ) );
+  Serial.println( F(" sentence is received.\n"
+                        "  You should confirm this with NMEAorder.ino\n") );
+  trace_header( Serial );
+  Serial.flush();
+    gpsPort.begin(9600);
+
  }
 
 uint32_t timer = millis();
 void loop() {
- if (prog == 62){eagleHasLanded();}
+
+
+   if (prog == 62){eagleHasLanded();}
  if (prog == 70){haveAProblem();}
  if (prog == 69){weChoose();}  
  if (mode == 0) {mode0();}
@@ -108,9 +207,8 @@ void loop() {
 
  if (togcount == 4) {togcount = 0;if (toggle == 0) {toggle = 1;}else{toggle = 0;}}
  togcount++;
- if (action == 3){ togcount = 4;delay(200);} else {delay(100);}
+ if (action == 3){ togcount = 4;} else {}
  
- delay(100);
 
  if(action == 1) {action1();} // V16N17 ReadIMU Gyro
  if(action == 2) {action2();compTime();} // V16N36 ReadTime
@@ -122,13 +220,8 @@ void loop() {
  if(action == 8) {action8();} // V16N18 ReadIMU Accel
  if(action == 9) {action9();} // V16N19 Read Temp Date & Time
  if(action == 10) {action10();} // V16N68 Apollo 11 Decent & Landing
-
- Serial.print(verb);
- Serial.print("  ");
- Serial.print(noun);
- Serial.print("  ");
- Serial.println(action);
- //WakeUpAlarm();
+ 
+  GPSloop();
 }
 
 void mode0() {//no action set just reading the kb
@@ -221,49 +314,70 @@ void compTime() {
     if(toggle == 0) {lampit(0,0,0, 3);} else {lampit(0,150,0, 3);}
 }
 
-void action3(){     //Read GPS
-  while(gpsFix == 0){
-  gpsBegin();
-  }
-  if(gpsFix == 1){
-  digitalWrite(7,HIGH);
-  delay(20);
-  byte data[83];
-  while((Serial.available()) > 0) {int x =  Serial.read(); }
-  while((Serial.available()) < 1) {int x = 1; }
-  delay(6);
-  int index = 0;
-  while(Serial.available() > 0){
-  data[index] = Serial.read();
-  delayMicroseconds(960);
-  index++;
-  if(index >= 72) {index = 71; }
-  }
-  int lat = 0;
-  int lon = 0;
-  int alt = 0;
-  if (count < 10){
-    count++;
- lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
- lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
- alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
-  }
-  else {
-    count++;
- lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
- lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
- alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
-  }
-  if (count > 25) {count = 0;}
- if (data[28] != 78) {lat = ((lat - (lat + lat)));}
- if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
+void action3(){
+ Serial.print("LATTTTTTT: ");
+ Serial.println(lat);
    imuval[4] = lat;
    imuval[5] = lon;
    imuval[6] = alt;
-   digitalWrite(7,LOW);
    setDigits();  
-  }
 }
+
+//
+//void action3(){     //Read GPS
+//  delay(20);
+//  byte data[83];
+//  while((gps.available()) > 0) {int x =  gps.read(); }
+//  while((gps.available()) < 1) {int x = 1; }
+//  delay(6);
+//  int index = 0;
+//  while(gps.available() > 0){
+//  data[index] = gps.read();
+//  delayMicroseconds(960);
+//  index++;
+//  }
+//  int heading = 0;
+//  int lat = 0;
+//  int lon = 0;
+//  int alt = 0;
+//  int fix =  data[81] - 48;
+//  if (count < 10){
+//    count++;
+// lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
+// lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
+// alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+// if(data[index - 20] == 44){
+// heading = ((data[index - 18] - 48) * 10) + (data[index - 17] - 48);
+// }
+// else {
+// heading = (((data[index - 20] -48) * 100) + ((data[index - 19] - 48) * 10) + ((data[index - 18] - 48)));
+// }
+//
+//  }
+//  else {
+//    count++;
+// lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
+// lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
+// alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
+// if(data[index - 20] == 44){
+// heading = ((data[index - 18] - 48) * 10) + (data[index - 17] - 48);
+// }
+// else {
+// heading = (((data[index - 20] -48) * 100) + ((data[index - 19] - 48) * 10) + ((data[index - 18] - 48)));
+// }
+//  if (count > 25) {count = 0;}
+// if (data[28] != 78) {lat = ((lat - (lat + lat)));}
+// if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
+//   imuval[4] = lat;
+//   imuval[5] = lon;
+//   imuval[6] = heading;
+//   setDigits();  
+//}   
+//delay(20);
+//Serial.println(heading);
+//
+//delay(20);
+//}
 
 
 void action4() { // IMU XYZ Delta
@@ -280,7 +394,6 @@ DateTime now = rtc.now();
   int NSE = now.second();
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
-    Serial.println(keyVal);
    keyVal = readkb();
    if(keyVal != oldkey) {
     oldkey = keyVal;
@@ -380,7 +493,6 @@ DateTime now = rtc.now();
   
   while(keyVal == 15){ keyVal = readkb();}
   while(keyVal != 15){
-    Serial.println(keyVal);
    keyVal = readkb();
    if(keyVal != oldkey) {
     oldkey = keyVal;
@@ -410,9 +522,7 @@ DateTime now = rtc.now();
 
 //$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
 void action7(){     //Read GPS Heading
- digitalWrite(7,HIGH);
-  delay(20);
-  byte data[273];
+  byte data[83];
   while((Serial.available()) > 0) {int x =  Serial.read(); }
   while((Serial.available()) < 1) {int x = 1; }
   delay(6);
@@ -434,7 +544,6 @@ void action7(){     //Read GPS Heading
    imuval[4] = heading;
    imuval[5] = bearing;
    imuval[6] = spd;
-   digitalWrite(7,LOW);
    setDigits();  
   delay(500);
 }
@@ -459,7 +568,7 @@ void mode11() {
 
 int readkb() { 
 int value_row1 = analogRead(A0);
-int value_row2 = analogRead(A1);Serial.println(value_row2);
+int value_row2 = analogRead(A1);
 int value_row3 = analogRead(A2);
  if ((value_row1 > 930)&&(value_row2 > 930)&&(value_row3 > 930)) {return 20 ;}// no key
  else if (value_row1 < 225) return 10 ; // Verb
