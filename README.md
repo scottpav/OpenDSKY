@@ -1,20 +1,23 @@
-_This branch contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. For the current stable release, click here:_ https://github.com/scottpav/OpenDSKY
-
-
 # OpenDSKY
+
+![alt text](https://fabcross.jp/news/2018/dmln53000006i503-img/dmln53000006i50t.jpg "Apollo DSKY AGC")
+
 https://opendsky.backerkit.com/
 
 ## Available Functions
-1.  V16 N17 - Display IMU Gyro XYZ
-2.  V16 N18 - Display IMU Accel XYZ
-3.  V16 N19 - Display Date(Month/Day) & Time
-4.  V16 N36 - Read Time From RTC
-5.  V16 N43 - Display GPS Position & Altitude
-6.  V16 N87 - Display IMU XYZ values
-7.  V21 N36 - Set the Time on RTC Module
-8.  V16 N46 - Display GPS Position & Heading
-9.  V16 N33 - User Configurable Countdown Timer
-10. V16 N68 - Apollo 11 Lunar Descent/Landing Simulation
+
+| Verb | Noun | Function |
+|:-------------:|:-------------:| -----|
+| 16 | 17 | Display IMU Gyro XYZ |
+| 16 | 18 | Display IMU Accel XYZ |
+| 16 | 19 | Display Date(Month/Day) & Time |
+| 16 | 36 | Read Time From RTC |
+| 16 | 43 | Display GPS Position & Altitude |
+| 16 | 87 | Display IMU Values (All) |
+| 21 | 36 | Set the Time on RTC Module |
+| 16 | 46 | Display GPS Position & Heading |
+| 16 | 33 | Countdown Timer/Alarm |
+| 16 | 68 | Apollo 11 Lunar Descent/Landing Simulation |
 
 ## Required Libraries
 > DFPlayerMiniFast (Nano TX -> DFPlayer pin2): https://github.com/scottpav/DFPlayerMini_Fast
