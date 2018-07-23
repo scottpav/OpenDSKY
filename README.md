@@ -1,4 +1,4 @@
-_This Repo contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. For the current stable release, click here:_ https://github.com/scottpav/OpenDSKY
+_This branch contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. For the current stable release, click here:_ https://github.com/scottpav/OpenDSKY
 
 
 # OpenDSKY
