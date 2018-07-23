@@ -4,7 +4,6 @@
 #include<Wire.h>
 #include "RTClib.h"
 #include "LedControl.h"
-#include <MicroNMEA.h>
 #define PIN            6
 #define RELAY_PIN      7
 #define NUMPIXELS      18
@@ -304,7 +303,7 @@ void action1() {
 
 void action2() { // Reads Time from RTC
   DateTime now = rtc.now();
-  if(oldSecond != now.second())
+  if(oldSecond < now.second())
   {
     compTime();
     oldSecond = now.second();
@@ -316,12 +315,23 @@ void action2() { // Reads Time from RTC
 }
 
 void compTime() {
-    if(toggle == 0) {lampit(0,0,0, 3);} else {lampit(0,150,0, 3);}
+  lampit(0,0,0, 3);
+  delay(500);
+    lampit(0,150,0, 3);
 }
 
 void action3(){
- Serial.print("LATTTTTTT: ");
- Serial.println(lat);
+ if (!fix.valid.location)
+ {
+  lampit(100,100,100, 16);
+  lampit(100,100,0, 8);
+ }
+ else{
+    lampit(0,0,0, 8);
+    lampit(0,0,0, 16);
+    lampit(100,100,0, 9);
+    lampit(100,100,0, 10);
+ }
    imuval[4] = lat;
    imuval[5] = lon;
    imuval[6] = alt;
