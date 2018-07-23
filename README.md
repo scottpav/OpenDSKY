@@ -1,8 +1,8 @@
 # OpenDSKY
 
-![alt text](https://fabcross.jp/news/2018/dmln53000006i503-img/dmln53000006i50t.jpg "Apollo DSKY AGC")
+[![IMAGE ALT TEXT HERE](https://fabcross.jp/news/2018/dmln53000006i503-img/dmln53000006i50t.jpg)](https://opendsky.backerkit.com)
 
-https://opendsky.backerkit.com/
+[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/I6qBGJz7ALo/0.jpg)](http://www.youtube.com/watch?v=I6qBGJz7ALo)
 
 ## Available Functions
 
