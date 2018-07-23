@@ -60,7 +60,7 @@ byte togcount = 0;
 bool newAct = 0;
 bool gpsFix = 0;
 boolean usingInterrupt = false;
-
+int oldSecond = 0;
 byte wpLatDDNew[2];
 byte wpLatMMNew[5];
 byte wpLonDDNew[2];
@@ -304,10 +304,15 @@ void action1() {
 
 void action2() { // Reads Time from RTC
   DateTime now = rtc.now();
-   imuval[4] = (now.hour());
-   imuval[5] = (now.minute());
-   imuval[6] = (now.second());
-   setDigits();  
+  if(oldSecond != now.second())
+  {
+    compTime();
+    oldSecond = now.second();
+  } 
+  imuval[4] = (now.hour());
+  imuval[5] = (now.minute());
+  imuval[6] = (now.second());
+  setDigits();  
 }
 
 void compTime() {
