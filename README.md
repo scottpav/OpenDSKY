@@ -1,10 +1,10 @@
-This Repo contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. For the current stable release, click here: https://github.com/scottpav/OpenDSKY
+*This Repo contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. For the current stable release, click here: https://github.com/scottpav/OpenDSKY *
 
 
 # OpenDSKY
-Modified code from https://opendsky.backerkit.com/
+Hardware: https://opendsky.backerkit.com/
 
-# Available Functions
+## Available Functions
 1.  V16 N17 - Display IMU Gyro XYZ
 2.  V16 N18 - Display IMU Accel XYZ
 3.  V16 N19 - Display Date(Month/Day) & Time
@@ -16,7 +16,7 @@ Modified code from https://opendsky.backerkit.com/
 9.  V16 N33 - User Configurable Countdown Timer
 10. V16 N68 - Apollo 11 Lunar Descent/Landing Simulation
 
-# Required Libraries
+## Required Libraries
 > DFPlayerMiniFast (Nano TX -> DFPlayer pin2): https://github.com/scottpav/DFPlayerMini_Fast
 
 > Adafruit NeoPixel Library: https://github.com/adafruit/Adafruit_NeoPixel
