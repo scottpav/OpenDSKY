@@ -1,3 +1,5 @@
+_This Repo contains features that are currently under development. Running this code may (probably will) result in a less than desirable experience. The current stable release can be found here:_ https://github.com/scottpav/OpenDSKY
+
 # OpenDSKY
 
 ![alt text](https://fabcross.jp/news/2018/dmln53000006i503-img/dmln53000006i50t.jpg "Apollo DSKY AGC")
