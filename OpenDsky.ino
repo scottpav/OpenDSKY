@@ -51,6 +51,7 @@ byte togcount = 0;
 bool newAct = 0;
 int oldSecond = 0;
 
+bool gpsFix = 0;
 int lat = 0;
 int lon = 0;
 int alt = 0;
@@ -60,20 +61,21 @@ float range = 0;
 float wpLongitude = 0;
 String wpLat = "N";
 String wpLon = "W";
-NeoGPS::Location_t base( 34803113L, -86770706L ); 
+NeoGPS::Location_t base( 348029032L, -867704843L ); 
 static NMEAGPS  gps;
 static gps_fix  fix;
 static void updateGPS( const gps_fix & fix );
 static void updateGPS( const gps_fix & fix ){
   if (fix.valid.location) {
+    gpsFix = 1;
     lat = (fix.latitude() * 100);
     lon = (fix.longitude() * 100);
     alt = fix.altitude_ft();
-    spd = fix.speed_mkn();
+    spd = floor(fix.speed_mph());
     hdg = fix.heading();
     range = fix.location.DistanceMiles( base );
     if ( fix.dateTime.seconds < 10 )
-      Serial.print( '0' );
+    Serial.print( '0' );
     Serial.print( fix.dateTime.seconds );
     Serial.print( ',' );
 
@@ -185,9 +187,7 @@ void setup() {
 
 uint32_t timer = millis();
 void loop() {
-
-
-   if (prog == 62){eagleHasLanded();}
+ if (prog == 62){eagleHasLanded();}
  if (prog == 70){haveAProblem();}
  if (prog == 69){weChoose();}  
  if (mode == 0) {mode0();}
@@ -316,16 +316,15 @@ void compTime() {
 }
 
 void action3(){
-   if (!fix.valid.location)
+   if (gpsFix == 1)
    {
-    lampit(100,100,100, 16);
-    lampit(100,100,0, 8);
-   }
-   else{
     lampit(0,0,0, 8);
-    lampit(0,0,0, 16);
     lampit(100,100,0, 9);
     lampit(100,100,0, 10);
+   }
+   else{
+    lampit(100,100,100, 16);
+    lampit(100,100,0, 8);
    }
    if (fix.dateTime.seconds > 30) {
     imuval[4] = lat;
