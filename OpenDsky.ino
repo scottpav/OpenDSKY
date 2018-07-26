@@ -291,23 +291,23 @@ void compTime() {
     lampit(0,0,0, 3);    
 }
 
-void action3(){
-   if (gpsFix == 1)
-   {
-    lampit(0,0,0, 8);
-    lampit(100,100,0, 9);
-    lampit(100,100,0, 10);
-   }
-   else{
-    lampit(100,100,100, 16);
-    lampit(100,100,0, 8);
-   }
-    imuval[4] = lat;
-    imuval[5] = lon;
-    imuval[6] = alt;
-    setDigits();  
-}
-
+//void action3(){
+//   if (gpsFix == 1)
+//   {
+//    lampit(0,0,0, 8);
+//    lampit(100,100,0, 9);
+//    lampit(100,100,0, 10);
+//   }
+//   else{
+//    lampit(100,100,100, 16);
+//    lampit(100,100,0, 8);
+//   }
+//    imuval[4] = lat;
+//    imuval[5] = lon;
+//    imuval[6] = alt;
+//    setDigits();  
+//}
+//
 
 
 
@@ -451,7 +451,7 @@ DateTime now = rtc.now();
  noun = 19; 
 }
 
-void action7(){
+void action3(){
    if (gpsFix == 1)
    {
     compTime();
@@ -976,156 +976,152 @@ void startUp() {
            //    ####################    T H E   B O N E   Y A R D    ##########################      //
           /////////////////////////////////////////////////////////////////////////////////////////////
 
-//void action7(){     //Read GPS VEL & ALT
-//  byte wpLatDDNew[2];
-//  byte wpLonDDNew[2];  
-//  
-//  byte wpLatMMNew[2];
-//  byte wpLonMMNew[2];
-//
-//  byte wpLatSSNew[5];
-//  byte wpLonSSNew[5];
-//
-//  long wpLatitude = 0;
-//  long wpLongitude = 0;
-//  
-//  lc.setRow(1,0,B00000000);
-//  lc.setRow(1,1,B00000000);
-//  lc.setRow(1,5,B00000000);
-//  lc.setRow(2,0,B00000000);
-//  lc.setRow(2,3,B00000000);
-//  lc.setRow(2,4,B00000000);
-//  lc.setRow(2,5,B00000000);
-//  lc.setRow(3,0,B00000000);
-// while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//  lc.setRow(1,2,B00001110);//L
-//  lc.setRow(1,3,B01110111);//A
-//  lc.setRow(1,4,B00001111);//t
-//
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//     if(keyVal == 12){
-//          lc.setRow(2,0,B01110100);
-//         // wpLat = "N";
-//        }
-//        if(keyVal == 13){
-//          lc.setRow(2,0,B00100100);
-//         // wpLat = "S";
-//        }
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLatDDNew[count] = keyVal;
-//          setdigits(2, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(2);
-//        count = 0;
-//      }
-//   }
-// }
-//int wpLatitudeDD = ((wpLatDDNew[0] * 10) + wpLatDDNew[1]);
-//while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLatMMNew[count] = keyVal;
-//          setdigits(3, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(3);
-//        count = 0;
-//      }
-//   }
-//  }
-//int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
-//wpLatitude = ((wpLatitudeDD *1000) + wpLatitudeMM);
-//        lc.clearDisplay(1);
-//        lc.clearDisplay(2);
-//        lc.clearDisplay(3);
-//        lc.setRow(1,2,B00001110); //L
-//        lc.setRow(1,3,B01111110);// O
-//        lc.setRow(1,4,B01110110);//N
-// while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//     if(keyVal == 12){
-//          lc.setRow(2,0,B01110100);
-//         // wpLon = "W";
-//        }
-//        if(keyVal == 13){
-//          lc.setRow(2,0,B00100100);
-//          // wpLon = "E";
-//        }
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLonDDNew[count] = keyVal;
-//          setdigits(2, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(2);
-//        count = 0;
-//      }
-//   }
-// }
-// 
-//int wpLongitudeDD = ((wpLonDDNew[0] * 10) + wpLonDDNew[1]);
-//while(keyVal == 15){ keyVal = readkb();}
-// count = 0; fresh = 0;
-//  while(keyVal != 15 && fresh == 0){
-//   keyVal = readkb();
-//   if(keyVal != oldkey) {
-//     oldkey = keyVal;
-//      if((keyVal < 10) && (count < 5)) {
-//          wpLonMMNew[count] = keyVal;
-//          setdigits(3, count+1, keyVal);
-//          count++;
-//      }
-//      if(keyVal == 18) {
-//        fresh = 1;
-//      }
-//      if(fresh == 1){
-//        lc.clearDisplay(3);
-//        lc.clearDisplay(3);
-//        count = 0;
-//      }
-//   }
-//  }
-//int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
-//wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
-//for(int i=2;i<4;i++) {
-//    lc.setRow(i,0,B00100100);
-//    lc.setChar(i,1,'-',false);
-//    lc.setChar(i,2,'-',false);
-//    lc.setChar(i,3,'-',false);
-//    lc.setChar(i,4,'-',false);
-//    lc.setChar(i,5,'-',false);
-//    setDigits(); 
-//    }
-// 
-//Serial.print(wpLatitude);
-//Serial.print(", ");
-//Serial.println(wpLongitude);
-//
-//}
+void action7(){     //Read GPS VEL & ALT
+  byte wpLatDNew[4];
+  byte wpLonDNew[4];  
+  
+  byte wpLatDDNew[4];
+  byte wpLonDDNew[4];
+
+  int32_t wpLatitude = 0;
+  int32_t wpLongitude = 0;
+  
+  lc.setRow(1,0,B00000000);
+  lc.setRow(1,1,B00000000);
+  lc.setRow(1,5,B00000000);
+  lc.setRow(2,0,B00000000);
+  lc.setRow(2,3,B00000000);
+  lc.setRow(2,4,B00000000);
+  lc.setRow(2,5,B00000000);
+  lc.setRow(3,0,B00000000);
+ while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+  lc.setRow(1,2,B00001110);//L
+  lc.setRow(1,3,B01110111);//A
+  lc.setRow(1,4,B00001111);//t
+
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+     if(keyVal == 12){
+          lc.setRow(2,0,B01110100);
+         // wpLat = "N";
+        }
+        if(keyVal == 13){
+          lc.setRow(2,0,B00100100);
+         // wpLat = "S";
+        }
+      if((keyVal < 10) && (count < 5)) {
+          wpLatDNew[count] = keyVal;
+          setdigits(2, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(2);
+        count = 0;
+      }
+   }
+ }
+int wpLatitudeD = ((wpLatDNew[0] * 1000) + (wpLatDNew[1] * 100) + (wpLatDNew[2] * 10) + wpLatDNew[3]);
+while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+      if((keyVal < 10) && (count < 5)) {
+          wpLatDDNew[count] = keyVal;
+          setdigits(3, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(3);
+        count = 0;
+      }
+   }
+  }
+int wpLatitudeDD = ((wpLatDDNew[0] *1000) + (wpLatDDNew[1] * 100) + (wpLatDDNew[2] * 10) + wpLatDDNew[3]);
+wpLatitude = (wpLatitudeD * 1000) + wpLatitudeDD;
+        lc.clearDisplay(1);
+        lc.clearDisplay(2);
+        lc.clearDisplay(3);
+        lc.setRow(1,2,B00001110); //L
+        lc.setRow(1,3,B01111110);// O
+        lc.setRow(1,4,B01110110);//N
+ while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+     if(keyVal == 12){
+          lc.setRow(2,0,B01110100);
+         // wpLon = "W";
+        }
+        if(keyVal == 13){
+          lc.setRow(2,0,B00100100);
+          // wpLon = "E";
+        }
+      if((keyVal < 10) && (count < 5)) {
+          wpLonDNew[count] = keyVal;
+          setdigits(2, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(2);
+        count = 0;
+      }
+   }
+ }
+ 
+int wpLongitudeD = ((wpLonDNew[0] * 1000) + (wpLonDNew[1] * 100) + (wpLonDNew[2] * 10) + wpLonDNew[3]);
+while(keyVal == 15){ keyVal = readkb();}
+ count = 0; fresh = 0;
+  while(keyVal != 15 && fresh == 0){
+   keyVal = readkb();
+   if(keyVal != oldkey) {
+     oldkey = keyVal;
+      if((keyVal < 10) && (count < 5)) {
+          wpLonDDNew[count] = keyVal;
+          setdigits(3, count+1, keyVal);
+          count++;
+      }
+      if(keyVal == 18) {
+        fresh = 1;
+      }
+      if(fresh == 1){
+        lc.clearDisplay(3);
+        lc.clearDisplay(3);
+        count = 0;
+      }
+   }
+  }
+int wpLongitudeDD = ((wpLonDDNew[0] *1000) + (wpLonDDNew[1] * 100) + (wpLonDDNew[2] * 10) + wpLonDDNew[3]);
+wpLongitude = (wpLongitudeD * 1000) + wpLongitudeDD;
+for(int i=2;i<4;i++) {
+    lc.setRow(i,0,B00100100);
+    lc.setChar(i,1,'-',false);
+    lc.setChar(i,2,'-',false);
+    lc.setChar(i,3,'-',false);
+    lc.setChar(i,4,'-',false);
+    lc.setChar(i,5,'-',false);
+    setDigits(); 
+    }
+//NeoGPS::Location_t base( wpLatitude, wpLongitude ); 
+Serial.print(wpLatitude);
+Serial.print(", ");
+Serial.println(wpLongitude);
+}
 
 
 //void action3(){     //Read GPS POS & ALT
