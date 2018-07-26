@@ -11,18 +11,25 @@
 #define PIN            6
 #define RELAY_PIN      7
 #define NUMPIXELS      18
-#define Start_Byte 0x7E
-#define Version_Byte 0xFF
-#define Command_Length 0x06
-#define End_Byte 0xEF
-#define Acknowledge 0x00 //Returns info with command 0x41 [0x01: info, 0x00: no info]
-
 
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 DFPlayerMini_Fast player;
-bool debug = true;
+
+NeoGPS::Location_t base( 348034760, -867709010 ); 
+bool gpsFix = 0;
+int lat = 0;
+int lon = 0;
+int alt = 0;
+int spd = 0;
+int hdg = 0;
+float range = 0;
+int rangeFeet = 0;
+int bearing = 0;
+static NMEAGPS  gps;
+static gps_fix  fix;
+
 unsigned long previousMillis = 0;   
 const int MPU_addr=0x69;  // I2C address of the MPU-6050
 long imuval[7];
@@ -51,21 +58,6 @@ byte togcount = 0;
 bool newAct = 0;
 int oldSecond = 0;
 
-bool gpsFix = 0;
-int lat = 0;
-int lon = 0;
-int alt = 0;
-int spd = 0;
-int hdg = 0;
-float range = 0;
-int rangeFeet = 0;
-int bearing = 0;
-float wpLongitude = 0;
-String wpLat = "N";
-String wpLon = "W";
-NeoGPS::Location_t base( 347932000, -867498630 ); 
-static NMEAGPS  gps;
-static gps_fix  fix;
 static void updateGPS( const gps_fix & fix );
 static void updateGPS( const gps_fix & fix ){
   if (fix.valid.location) {
@@ -80,29 +72,11 @@ static void updateGPS( const gps_fix & fix ){
     bearing = fix.location.BearingToDegrees( base );
     Serial.print( "bearing: " );
     Serial.println( bearing );
-
-    // Serial.print( fix.latitude(), 6 ); // floating-point display
-    //printL( Serial, fix.latitudeL() ); // prints int like a float
-    Serial.print( ',' );
-    // Serial.print( fix.longitude(), 6 ); // floating-point display
-     Serial.print( fix.longitudeL() );  // integer display
-    //printL( Serial, fix.longitudeL() ); // prints int like a float
-
-    Serial.print( ',' );
-    if (fix.valid.satellites)
-      Serial.print( fix.satellites );
-
-    Serial.print( ',' );
-    Serial.print( fix.speed(), 6 );
-    Serial.print( F(" kn = ") );
-    Serial.print( fix.speed_mph(), 6 );
-    Serial.print( F(" mph") );
-
   } else {
+    gpsFix = 0;
     // No valid location data yet!
     Serial.print( '?' );
   }
-
   Serial.println();
 }
 
@@ -998,13 +972,23 @@ void startUp() {
   validateAct(); 
   }
 
-
       ////////////////////////////////////////////////////////////////////////////////////////////////////////
            //    ####################    T H E   B O N E   Y A R D    ##########################      //
           /////////////////////////////////////////////////////////////////////////////////////////////
 
 //void action7(){     //Read GPS VEL & ALT
-// if(navActive == 0){
+//  byte wpLatDDNew[2];
+//  byte wpLonDDNew[2];  
+//  
+//  byte wpLatMMNew[2];
+//  byte wpLonMMNew[2];
+//
+//  byte wpLatSSNew[5];
+//  byte wpLonSSNew[5];
+//
+//  long wpLatitude = 0;
+//  long wpLongitude = 0;
+//  
 //  lc.setRow(1,0,B00000000);
 //  lc.setRow(1,1,B00000000);
 //  lc.setRow(1,5,B00000000);
@@ -1025,13 +1009,13 @@ void startUp() {
 //     oldkey = keyVal;
 //     if(keyVal == 12){
 //          lc.setRow(2,0,B01110100);
-//          wpLat = "N";
+//         // wpLat = "N";
 //        }
 //        if(keyVal == 13){
 //          lc.setRow(2,0,B00100100);
-//          wpLat = "S";
+//         // wpLat = "S";
 //        }
-//      if((keyVal < 10) && (count < 2)) {
+//      if((keyVal < 10) && (count < 5)) {
 //          wpLatDDNew[count] = keyVal;
 //          setdigits(2, count+1, keyVal);
 //          count++;
@@ -1067,7 +1051,7 @@ void startUp() {
 //   }
 //  }
 //int wpLatitudeMM = ((wpLatMMNew[0] *1000) + (wpLatMMNew[1] * 100) + (wpLatMMNew[2] * 10) + wpLatMMNew[3]);
-//wpLatitude = (float) wpLatitudeDD + (float) wpLatitudeMM;
+//wpLatitude = ((wpLatitudeDD *1000) + wpLatitudeMM);
 //        lc.clearDisplay(1);
 //        lc.clearDisplay(2);
 //        lc.clearDisplay(3);
@@ -1082,13 +1066,13 @@ void startUp() {
 //     oldkey = keyVal;
 //     if(keyVal == 12){
 //          lc.setRow(2,0,B01110100);
-//          wpLon = "W";
+//         // wpLon = "W";
 //        }
 //        if(keyVal == 13){
 //          lc.setRow(2,0,B00100100);
-//          wpLon = "E";
+//          // wpLon = "E";
 //        }
-//      if((keyVal < 10) && (count < 2)) {
+//      if((keyVal < 10) && (count < 5)) {
 //          wpLonDDNew[count] = keyVal;
 //          setdigits(2, count+1, keyVal);
 //          count++;
@@ -1127,7 +1111,6 @@ void startUp() {
 //  }
 //int wpLongitudeMM = ((wpLonMMNew[0] *1000) + (wpLonMMNew[1] * 100) + (wpLonMMNew[2] * 10) + wpLonMMNew[3]);
 //wpLongitude = (float) wpLongitudeDD + (float) wpLongitudeMM;
-//navActive = 1;
 //for(int i=2;i<4;i++) {
 //    lc.setRow(i,0,B00100100);
 //    lc.setChar(i,1,'-',false);
@@ -1137,9 +1120,14 @@ void startUp() {
 //    lc.setChar(i,5,'-',false);
 //    setDigits(); 
 //    }
-// }
-//  //  executeNav();
+// 
+//Serial.print(wpLatitude);
+//Serial.print(", ");
+//Serial.println(wpLongitude);
+//
 //}
+
+
 //void action3(){     //Read GPS POS & ALT
 //  digitalWrite(RELAY_PIN, HIGH);
 //  delay(20);
