@@ -58,10 +58,12 @@ int alt = 0;
 int spd = 0;
 int hdg = 0;
 float range = 0;
+int rangeFeet = 0;
+int bearing = 0;
 float wpLongitude = 0;
 String wpLat = "N";
 String wpLon = "W";
-NeoGPS::Location_t base( 348029032L, -867704843L ); 
+NeoGPS::Location_t base( 347932000, -867498630 ); 
 static NMEAGPS  gps;
 static gps_fix  fix;
 static void updateGPS( const gps_fix & fix );
@@ -73,14 +75,13 @@ static void updateGPS( const gps_fix & fix ){
     alt = fix.altitude_ft();
     spd = floor(fix.speed_mph());
     hdg = fix.heading();
-    range = fix.location.DistanceMiles( base );
-    if ( fix.dateTime.seconds < 10 )
-    Serial.print( '0' );
-    Serial.print( fix.dateTime.seconds );
-    Serial.print( ',' );
+    range = fix.location.DistanceMiles( base ) * 100;
+    rangeFeet = range * 5280;
+    bearing = fix.location.BearingToDegrees( base );
+    Serial.print( "bearing: " );
+    Serial.println( bearing );
 
     // Serial.print( fix.latitude(), 6 ); // floating-point display
-     Serial.print( fix.latitudeL() ); // integer display
     //printL( Serial, fix.latitudeL() ); // prints int like a float
     Serial.print( ',' );
     // Serial.print( fix.longitude(), 6 ); // floating-point display
@@ -187,6 +188,7 @@ void setup() {
 
 uint32_t timer = millis();
 void loop() {
+
  if (prog == 62){eagleHasLanded();}
  if (prog == 70){haveAProblem();}
  if (prog == 69){weChoose();}  
@@ -326,75 +328,13 @@ void action3(){
     lampit(100,100,100, 16);
     lampit(100,100,0, 8);
    }
-   if (fix.dateTime.seconds > 30) {
     imuval[4] = lat;
     imuval[5] = lon;
     imuval[6] = alt;
     setDigits();  
-   }
-   else {
-    imuval[4] = hdg;
-    imuval[5] = spd;
-    imuval[6] = range;
-    setDigits();  
-   }
 }
 
-//
-//void action3(){     //Read GPS
-//  delay(20);
-//  byte data[83];
-//  while((gps.available()) > 0) {int x =  gps.read(); }
-//  while((gps.available()) < 1) {int x = 1; }
-//  delay(6);
-//  int index = 0;
-//  while(gps.available() > 0){
-//  data[index] = gps.read();
-//  delayMicroseconds(960);
-//  index++;
-//  }
-//  int heading = 0;
-//  int lat = 0;
-//  int lon = 0;
-//  int alt = 0;
-//  int fix =  data[81] - 48;
-//  if (count < 10){
-//    count++;
-// lat = (((data[18] - 48) * 1000) + ((data[19] -48) * 100) + ((data[20] - 48) * 10) + ((data[21] - 48)));
-// lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
-// alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
-// if(data[index - 20] == 44){
-// heading = ((data[index - 18] - 48) * 10) + (data[index - 17] - 48);
-// }
-// else {
-// heading = (((data[index - 20] -48) * 100) + ((data[index - 19] - 48) * 10) + ((data[index - 18] - 48)));
-// }
-//
-//  }
-//  else {
-//    count++;
-// lat = (((data[21] - 48) * 10000) + ((data[23] - 48) * 1000) + ((data[24] -48) * 100) + ((data[25] - 48) * 10) + ((data[26] - 48)));
-// lon = (((data[34] - 48) * 10000) + ((data[36] - 48) * 1000) + ((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
-// alt = (((data[52] -48) * 100) + ((data[53] - 48) * 10) + ((data[54] - 48)));
-// if(data[index - 20] == 44){
-// heading = ((data[index - 18] - 48) * 10) + (data[index - 17] - 48);
-// }
-// else {
-// heading = (((data[index - 20] -48) * 100) + ((data[index - 19] - 48) * 10) + ((data[index - 18] - 48)));
-// }
-//  if (count > 25) {count = 0;}
-// if (data[28] != 78) {lat = ((lat - (lat + lat)));}
-// if (data[41] != 69) {lon = ((lon - (lon + lon)));} 
-//   imuval[4] = lat;
-//   imuval[5] = lon;
-//   imuval[6] = heading;
-//   setDigits();  
-//}   
-//delay(20);
-//Serial.println(heading);
-//
-//delay(20);
-//}
+
 
 
 void action4() { // IMU XYZ Delta
@@ -537,32 +477,25 @@ DateTime now = rtc.now();
  noun = 19; 
 }
 
-//$GPRMC,194509.000,A,4042.6142,N,07400.4168,W,2.03,221.11,160412,,,A*77
-void action7(){     //Read GPS Heading
-  byte data[83];
-  while((Serial.available()) > 0) {int x =  Serial.read(); }
-  while((Serial.available()) < 1) {int x = 1; }
-  delay(6);
-  int index = 0;
-  while(Serial.available() > 0){
-  data[index] = Serial.read();
-  delayMicroseconds(960);
-  index++;
-  }
-  int heading = 0;
-  int bearing = 0;
-  int spd = 0;
-   
-   if(data[index] == 36 && data[index + 5] == 67){
-     heading = (((data[43] -48) * 100) + ((data[44] - 48) * 10) + ((data[45] - 48)));
-     //lon = (((data[30] - 48) * 10000) + ((data[31] - 48) * 1000) + ((data[32] -48) * 100) + ((data[33] - 48) * 10) + ((data[34] - 48)));
-     spd = (((data[37] -48) * 100) + ((data[38] - 48) * 10) + ((data[39] - 48)));
-    } 
-   imuval[4] = heading;
-   imuval[5] = bearing;
-   imuval[6] = spd;
-   setDigits();  
-  delay(500);
+void action7(){
+   if (gpsFix == 1)
+   {
+    compTime();
+    lampit(0,0,0, 8);
+    lampit(100,100,0, 9);
+    lampit(100,100,0, 10);
+   }
+   else{
+    lampit(100,100,100, 16);
+    lampit(100,100,0, 8);
+   }
+//   if(range < 1){
+//    range = rangeFeet;
+//   }
+    imuval[4] = hdg;
+    imuval[5] = bearing;
+    imuval[6] = range;
+    setDigits();
 }
 
 void action8(){
@@ -991,18 +924,23 @@ void readimuAccel(){
   for(int index = 0; imuval[indexa] >= 1; imuval[indexa] = (imuval[indexa] - 1)) { index ++; digitval[indexa][5] = index; }
  } 
   for(int index = 0; index < 3; index ++){
-  // lc.clearDisplay(index+1);  
-  for(int i=0;i<6;i++) {
+    bool dpBool = false;
+    for(int i=0;i<6;i++) {
     if (i == 0){
     if (digitval[(index +4)][i] == 1) {lc.setRow(index+1,i,B00100100);}
       else {lc.setRow(index+1,i,B01110100);}
     }
     else {
-    lc.setDigit(index+1,i,digitval[index + 4][i],false);
+      if(action == 7 && index == 2 && i == 3){
+        lc.setDigit(index+1,i,digitval[index + 4][i],true);
+      }
+      else{
+        lc.setDigit(index+1,i,digitval[index + 4][i],false);
+      }
     }
- } 
- }
- }
+   }
+  } 
+}
 
  void weChoose()
     {
