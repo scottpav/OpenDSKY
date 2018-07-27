@@ -8,11 +8,11 @@
 #include <Streamers.h>
 #include <GPSport.h>
 
-#define PIN            6
+#define PIXEL_PIN      6
 #define RELAY_PIN      7
 #define NUMPIXELS      18
 
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIXEL_PIN, NEO_GRB + NEO_KHZ800);
 LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 DFPlayerMini_Fast player;
