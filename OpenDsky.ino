@@ -85,6 +85,7 @@ static void GPSloop()
 {
   while (gps.available( gpsPort ))
     updateGPS( gps.read() );
+    delay(20);
 }
 void setup() {
   pinMode(A0, INPUT);
@@ -905,7 +906,7 @@ void readimuAccel(){
       else {lc.setRow(index+1,i,B01110100);}
     }
     else {
-      if(action == 7 && index == 2 && i == 3){
+      if(action == 3 && index == 2 && i == 3){
         lc.setDigit(index+1,i,digitval[index + 4][i],true);
       }
       else{
@@ -985,7 +986,9 @@ void action7(){     //Read GPS VEL & ALT
 
   int32_t wpLatitude = 0;
   int32_t wpLongitude = 0;
-  
+
+  String wpLon = "W";
+  String wpLat = "N";
   lc.setRow(1,0,B00000000);
   lc.setRow(1,1,B00000000);
   lc.setRow(1,5,B00000000);
@@ -1006,11 +1009,11 @@ void action7(){     //Read GPS VEL & ALT
      oldkey = keyVal;
      if(keyVal == 12){
           lc.setRow(2,0,B01110100);
-         // wpLat = "N";
+          wpLat = "N";
         }
         if(keyVal == 13){
           lc.setRow(2,0,B00100100);
-         // wpLat = "S";
+          wpLat = "S";
         }
       if((keyVal < 10) && (count < 5)) {
           wpLatDNew[count] = keyVal;
@@ -1025,8 +1028,12 @@ void action7(){     //Read GPS VEL & ALT
         count = 0;
       }
    }
+      delay(20);
+
  }
-int wpLatitudeD = ((wpLatDNew[0] * 1000) + (wpLatDNew[1] * 100) + (wpLatDNew[2] * 10) + wpLatDNew[3]);
+uint16_t wpLatitudeD = ((wpLatDNew[0] * 1000) + (wpLatDNew[1] * 100) + (wpLatDNew[2] * 10) + wpLatDNew[3]);
+Serial.print("LatD = ");
+Serial.println(wpLatitudeD);
 while(keyVal == 15){ keyVal = readkb();}
  count = 0; fresh = 0;
   while(keyVal != 15 && fresh == 0){
@@ -1046,9 +1053,14 @@ while(keyVal == 15){ keyVal = readkb();}
         count = 0;
       }
    }
+      delay(20);
   }
-int wpLatitudeDD = ((wpLatDDNew[0] *1000) + (wpLatDDNew[1] * 100) + (wpLatDDNew[2] * 10) + wpLatDDNew[3]);
-wpLatitude = (wpLatitudeD * 1000) + wpLatitudeDD;
+uint16_t wpLatitudeDD = ((wpLatDDNew[0] *1000) + (wpLatDDNew[1] * 100) + (wpLatDDNew[2] * 10) + wpLatDDNew[3]);
+wpLatitude = ((int32_t)wpLatitudeD * 10000) + wpLatitudeDD;
+ if (wpLon == "E") {wpLatitude = ((wpLatitude - (wpLatitude + wpLatitude)));} 
+
+Serial.print("LatDD = ");
+Serial.println(wpLatitudeDD);
         lc.clearDisplay(1);
         lc.clearDisplay(2);
         lc.clearDisplay(3);
@@ -1063,11 +1075,11 @@ wpLatitude = (wpLatitudeD * 1000) + wpLatitudeDD;
      oldkey = keyVal;
      if(keyVal == 12){
           lc.setRow(2,0,B01110100);
-         // wpLon = "W";
+           wpLon = "W";
         }
         if(keyVal == 13){
           lc.setRow(2,0,B00100100);
-          // wpLon = "E";
+           wpLon = "E";
         }
       if((keyVal < 10) && (count < 5)) {
           wpLonDNew[count] = keyVal;
@@ -1082,9 +1094,12 @@ wpLatitude = (wpLatitudeD * 1000) + wpLatitudeDD;
         count = 0;
       }
    }
+      delay(20);
  }
  
-int wpLongitudeD = ((wpLonDNew[0] * 1000) + (wpLonDNew[1] * 100) + (wpLonDNew[2] * 10) + wpLonDNew[3]);
+uint16_t wpLongitudeD = ((wpLonDNew[0] * 1000) + (wpLonDNew[1] * 100) + (wpLonDNew[2] * 10) + wpLonDNew[3]);
+Serial.print("LonD = ");
+Serial.println(wpLongitudeD);
 while(keyVal == 15){ keyVal = readkb();}
  count = 0; fresh = 0;
   while(keyVal != 15 && fresh == 0){
@@ -1101,13 +1116,16 @@ while(keyVal == 15){ keyVal = readkb();}
       }
       if(fresh == 1){
         lc.clearDisplay(3);
-        lc.clearDisplay(3);
         count = 0;
       }
    }
+   delay(20);
   }
-int wpLongitudeDD = ((wpLonDDNew[0] *1000) + (wpLonDDNew[1] * 100) + (wpLonDDNew[2] * 10) + wpLonDDNew[3]);
-wpLongitude = (wpLongitudeD * 1000) + wpLongitudeDD;
+int32_t wpLongitudeDD = ((wpLonDDNew[0] *1000) + (wpLonDDNew[1] * 100) + (wpLonDDNew[2] * 10) + wpLonDDNew[3]);
+wpLongitude = ((int32_t)wpLongitudeD * 10000) + wpLongitudeDD;
+if (wpLon == "S") {wpLongitude = ((wpLongitude - (wpLongitude + wpLongitude)));} 
+Serial.print("LonDD = ");
+Serial.println(wpLongitudeDD);
 for(int i=2;i<4;i++) {
     lc.setRow(i,0,B00100100);
     lc.setChar(i,1,'-',false);
@@ -1117,10 +1135,12 @@ for(int i=2;i<4;i++) {
     lc.setChar(i,5,'-',false);
     setDigits(); 
     }
-//NeoGPS::Location_t base( wpLatitude, wpLongitude ); 
-Serial.print(wpLatitude);
+NeoGPS::Location_t base((wpLatitude * 10), (wpLongitude * 10)); 
+Serial.print((wpLatitude * 10));
 Serial.print(", ");
-Serial.println(wpLongitude);
+Serial.println((wpLongitude * 10));
+action = 3;
+newAct = 0;
 }
 
 
