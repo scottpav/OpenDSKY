@@ -17,7 +17,6 @@ LedControl lc=LedControl(12,10,11,4);
 RTC_DS1307 rtc; 
 DFPlayerMini_Fast player;
 
-NeoGPS::Location_t base( 348034760, -867709010 ); 
 bool gpsFix = 0;
 int lat = 0;
 int lon = 0;
@@ -57,10 +56,13 @@ bool toggle = 0;
 byte togcount = 0;
 bool newAct = 0;
 int oldSecond = 0;
+int32_t wpLatitude = 0;
+int32_t wpLongitude = 0;
 
 static void updateGPS( const gps_fix & fix );
 static void updateGPS( const gps_fix & fix ){
   if (fix.valid.location) {
+    NeoGPS::Location_t base((wpLatitude * 10), (wpLongitude * 10));
     gpsFix = 1;
     lat = (fix.latitude() * 100);
     lon = (fix.longitude() * 100);
@@ -984,9 +986,6 @@ void action7(){     //Read GPS VEL & ALT
   byte wpLatDDNew[4];
   byte wpLonDDNew[4];
 
-  int32_t wpLatitude = 0;
-  int32_t wpLongitude = 0;
-
   String wpLon = "W";
   String wpLat = "N";
   lc.setRow(1,0,B00000000);
@@ -1135,7 +1134,6 @@ for(int i=2;i<4;i++) {
     lc.setChar(i,5,'-',false);
     setDigits(); 
     }
-NeoGPS::Location_t base((wpLatitude * 10), (wpLongitude * 10)); 
 Serial.print((wpLatitude * 10));
 Serial.print(", ");
 Serial.println((wpLongitude * 10));
