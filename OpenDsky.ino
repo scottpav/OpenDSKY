@@ -139,64 +139,100 @@ void setLamp(int color, int lampNumber)
     }
 }
 
-void setDigits()
-{
-    for (int indexa = 0; indexa < 8; indexa ++) {
-        for (int index = 0; index < 7; index++) {
-            digitValue[indexa][index] = 0;
-        }
+void setDigits(){
+     for (int indexa = 0; indexa < 8; indexa ++){
+      for (int index = 0; index < 7; index++) {
+        digitValue[indexa][index]=0;      
+      }
+     }
+ for (int indexa = 0; indexa < 7; indexa ++){
+  if (valueForDisplay[indexa] < 0) {valueForDisplay[indexa] = (valueForDisplay[indexa] - (valueForDisplay[indexa] + valueForDisplay[indexa])); digitValue[indexa][0] = 1;}
+  else {digitValue[indexa][0] = 0;}
+  for(int index = 0; valueForDisplay[indexa] >= 100000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100000)) {index++;}
+  for(int index = 0; valueForDisplay[indexa] >= 10000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10000)) {index ++;  digitValue[indexa][1] = index; }
+  for(int index = 0; valueForDisplay[indexa] >= 1000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1000)) { index ++; digitValue[indexa][2] = index; }
+  for(int index = 0; valueForDisplay[indexa] >= 100; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100)) { index ++; digitValue[indexa][3] = index; }
+  for(int index = 0; valueForDisplay[indexa] >= 10; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10)) { index ++; digitValue[indexa][4] = index; }
+  for(int index = 0; valueForDisplay[indexa] >= 1; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1)) { index ++; digitValue[indexa][5] = index; }
+ } 
+  for(int index = 0; index < 3; index ++){
+    bool dpBool = false;
+    for(int i=0;i<6;i++) {
+    if (i == 0){
+    if (digitValue[(index +4)][i] == 1) {ledControl.setRow(index+1,i,B00100100);}
+      else {ledControl.setRow(index+1,i,B01110100);}
     }
-
-    for (int indexa = 0; indexa < 7; indexa ++) {
-        if (valueForDisplay[indexa] < 0) {
-            valueForDisplay[indexa] = (valueForDisplay[indexa] - (valueForDisplay[indexa] + valueForDisplay[indexa]));
-            digitValue[indexa][0] = 1;
-        }
-        else {
-            digitValue[indexa][0] = 0;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 100000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100000)) {
-            index++;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 10000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10000)) {
-            index++;
-            digitValue[indexa][1] = index;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 1000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1000)) {
-            index++;
-            digitValue[indexa][2] = index;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 100; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100)) {
-            index++;
-            digitValue[indexa][3] = index;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 10; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10)) {
-            index++;
-            digitValue[indexa][4] = index;
-        }
-        for (int index = 0; valueForDisplay[indexa] >= 1; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1)) {
-            index++;
-            digitValue[indexa][5] = index;
-        }
+    else {
+      if(action == 3 && index == 2 && i == 3){
+        ledControl.setDigit(index+1,i,digitValue[index + 4][i],true);
+      }
+      else{
+        ledControl.setDigit(index+1,i,digitValue[index + 4][i],false);
+      }
     }
-
-    for (int index = 0; index < 3; index++) {
-        // ledControl.clearDisplay(index+1);
-        for (int i = 0; i < 6; i++) {
-            if (i == 0) {
-                if (digitValue[(index+4)][i] == 1) {
-                    ledControl.setRow(index+1, i, B00100100);
-                }
-                else {
-                    ledControl.setRow(index+1, i, B01110100);
-                }
-            }
-            else {
-                ledControl.setDigit(index+1, i, digitValue[index + 4][i], false);
-            }
-        }
-    }
+   }
+  } 
 }
+
+//void setDigits()
+//{
+//    for (int indexa = 0; indexa < 8; indexa ++) {
+//        for (int index = 0; index < 7; index++) {
+//            digitValue[indexa][index] = 0;
+//        }
+//    }
+//
+//    for (int indexa = 0; indexa < 7; indexa ++) {
+//        if (valueForDisplay[indexa] < 0) {
+//            valueForDisplay[indexa] = (valueForDisplay[indexa] - (valueForDisplay[indexa] + valueForDisplay[indexa]));
+//            digitValue[indexa][0] = 1;
+//        }
+//        else {
+//            digitValue[indexa][0] = 0;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 100000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100000)) {
+//            index++;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 10000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10000)) {
+//            index++;
+//            digitValue[indexa][1] = index;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 1000; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1000)) {
+//            index++;
+//            digitValue[indexa][2] = index;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 100; valueForDisplay[indexa] = (valueForDisplay[indexa] - 100)) {
+//            index++;
+//            digitValue[indexa][3] = index;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 10; valueForDisplay[indexa] = (valueForDisplay[indexa] - 10)) {
+//            index++;
+//            digitValue[indexa][4] = index;
+//        }
+//        for (int index = 0; valueForDisplay[indexa] >= 1; valueForDisplay[indexa] = (valueForDisplay[indexa] - 1)) {
+//            index++;
+//            digitValue[indexa][5] = index;
+//        }
+//    }
+//
+//    for (int index = 0; index < 3; index++) {
+//        // ledControl.clearDisplay(index+1);
+//        for (int i = 0; i < 6; i++) {
+//            if (i == 0) {
+//                if (digitValue[(index+4)][i] == 1) {
+//                    ledControl.setRow(index+1, i, B00100100);
+//                }
+//                else {
+//                    ledControl.setRow(index+1, i, B01110100);
+//                }
+//            }
+//            else {
+//                ledControl.setDigit(index+1, i, digitValue[index + 4][i], false);
+//            }
+//        }
+//    }
+//}
+
 void clearRegister(int dregister)
 {
     ledControl.clearDisplay(dregister);
@@ -811,72 +847,148 @@ void executeProgramInputMode()
 
 void executeLampTestModeWithDuration(int durationInMilliseconds)
 {
-    for (int index = 11; index < 18; index++) {
-        // Uplink Acty, No Att, Stby, Key Rel, Opr Err, --, --
-        delay(200);
-        illuminateWithRGBAndLampNumber(100, 100, 60, index);    // less blue = more white
+  for (int index = 3; index < 18; index++) {
+    if(index == 3){setLamp(green, lampCompActy);}
+    if(index < 11 && index != 3){lampit(100,100,0, index);}
+    if(index <= 12){lampit(100,100,100, 23-index);}
+    delay(50);
+  }
+//for (int index = 11; index < 18; index++) {lampit(100,100,100, index);delay(50);}
+  for (int index = 0; index < 4; index++) {
+    for (int indexb = 0; indexb < 6; indexb++){
+      setdigits(index,indexb,8);
+      delay(25);
     }
+  }
+  delay(1500);
+  verb = verb_old;
+  noun = noun_old;
+  for (int index = 0; index < 4; index++) 
+  {
+    //Off
+    ledControl.clearDisplay(0);
+    setLamp(off, lampKeyRelease);
+    setLamp(off, lampOprErr);
+    delay(500);
+    
+    //On
+    if(prog == 0)
+    {
+      setdigits(0,3,8);
+      setdigits(0,2,8);
+    }
+    else
+    {
+      printProg(prog);
+    }
+    if (verb == 0) 
+    {
+        setdigits(0,0,8);
+        setdigits(0,1,8);
+        setdigits(0,4,8);
+        setdigits(0,5,8);
+    }
+    else
+    {
+      printVerb(verb);
+      printNoun(noun);
+    }
+    setLamp(white, lampKeyRelease);
+    setLamp(white, lampOprErr);
+    delay(500);
+  }
 
-    for (int index = 4; index < 11; index++) {
-        // Temp, Gimbal Loc, Prog, Restart, Tracker, Alt, Vel
-        delay(200);
-        illuminateWithRGBAndLampNumber(120, 110, 0, index);     // more yellow
-    }
-
-    for (int lampNumber = 0; lampNumber < 4; lampNumber++) {
-        // Comp Acty, Prog, Verb, Noun
-        delay(200);
-        illuminateWithRGBAndLampNumber(0, 150, 0, lampNumber);
-    }
-
-    int lampTestDigitValue = 8;
-    // passes number "8" to all the 7-segment numeric displays
-    for (int row = 0; row < 4; row++) {
-        // row 0 = Prog/Verb/Noun
-        // row 1 = Register 1
-        // row 2 = Register 2
-        // row 3 = Register 3
-        // ... each has six positions
-        // note: 'digit' # 0 in the three registers is the plus/minus sign
-        for (int digitPosition = 0; digitPosition < 6; digitPosition++) {
-            delay(200);
-            setDigits(row, digitPosition, lampTestDigitValue);
-        }
-    }
-
-    delay(durationInMilliseconds);
-
-    // reset all lamps
-    for (int index = 0; index < 4; index++) {
-        delay(200);
-        turnOffLampNumber(index);
-    }
-    for (int index = 4; index < 11; index++) {
-        delay(200);
-        turnOffLampNumber(index);
-    }
-    for (int index = 11; index < 18; index++) {
-        delay(200);
-        turnOffLampNumber(index);
-    }
-    for (int index = 0; index < 4; index++) {
-        delay(200);
-        ledControl.clearDisplay(index);
-    }
-
-    // restore previously-displayed values for Verb and Noun
+  for (int index = 3; index < 11; index++) {lampit(0,0,0, index);}
+  for (int index = 11; index < 18; index++) {if(index != 16){lampit(0,0,0, index);}}
+    ledControl.clearDisplay(0);
+    ledControl.clearDisplay(1);
+    ledControl.clearDisplay(2);
+    ledControl.clearDisplay(3);
+  if (verb == 0) {ledControl.setRow(0,0,0);ledControl.setRow(0,1,0);}
+  else{setdigits(0, 0,verbold[0]);setdigits(0, 1,verbold[1]);}
+  if (prog == 0) {ledControl.setRow(0,2,0);ledControl.setRow(0,3,0);}
+  else{setdigits(0, 0,prognew[0]);setdigits(0, 1,prognew[1]);}
+   if (noun == 0) {ledControl.setRow(0,4,0);ledControl.setRow(0,5,0);}
+  else{setdigits(0, 4,nounnew[0]);setdigits(0, 5,nounnew[1]);}
+    delay(1000); 
     setLamp(green, lampVerb);
     setLamp(green, lampNoun);
     setLamp(green, lampProg);
-    verb = verb_old;
-    printVerb(verb);
     printProg(prog);
-    noun = noun_old;
+    printVerb(verb);
     printNoun(noun);
     keyValue = keyNone;
     mode = modeIdle;
     validateAction();
 }
+//void executeLampTestModeWithDuration(int durationInMilliseconds)
+//{
+//    for (int index = 11; index < 18; index++) {
+//        // Uplink Acty, No Att, Stby, Key Rel, Opr Err, --, --
+//        delay(200);
+//        illuminateWithRGBAndLampNumber(100, 100, 60, index);    // less blue = more white
+//    }
+//
+//    for (int index = 4; index < 11; index++) {
+//        // Temp, Gimbal Loc, Prog, Restart, Tracker, Alt, Vel
+//        delay(200);
+//        illuminateWithRGBAndLampNumber(120, 110, 0, index);     // more yellow
+//    }
+//
+//    for (int lampNumber = 0; lampNumber < 4; lampNumber++) {
+//        // Comp Acty, Prog, Verb, Noun
+//        delay(200);
+//        illuminateWithRGBAndLampNumber(0, 150, 0, lampNumber);
+//    }
+//
+//    int lampTestDigitValue = 8;
+//    // passes number "8" to all the 7-segment numeric displays
+//    for (int row = 0; row < 4; row++) {
+//        // row 0 = Prog/Verb/Noun
+//        // row 1 = Register 1
+//        // row 2 = Register 2
+//        // row 3 = Register 3
+//        // ... each has six positions
+//        // note: 'digit' # 0 in the three registers is the plus/minus sign
+//        for (int digitPosition = 0; digitPosition < 6; digitPosition++) {
+//            delay(200);
+//            setDigits(row, digitPosition, lampTestDigitValue);
+//        }
+//    }
+
+//    delay(durationInMilliseconds);
+//
+//    // reset all lamps
+//    for (int index = 0; index < 4; index++) {
+//        delay(200);
+//        turnOffLampNumber(index);
+//    }
+//    for (int index = 4; index < 11; index++) {
+//        delay(200);
+//        turnOffLampNumber(index);
+//    }
+//    for (int index = 11; index < 18; index++) {
+//        delay(200);
+//        turnOffLampNumber(index);
+//    }
+//    for (int index = 0; index < 4; index++) {
+//        delay(200);
+//        ledControl.clearDisplay(index);
+//    }
+//
+//    // restore previously-displayed values for Verb and Noun
+//    setLamp(green, lampVerb);
+//    setLamp(green, lampNoun);
+//    setLamp(green, lampProg);
+//    verb = verb_old;
+//    printVerb(verb);
+//    printProg(prog);
+//    noun = noun_old;
+//    printNoun(noun);
+//    keyValue = keyNone;
+//    mode = modeIdle;
+//    validateAction();
+//}
 
 void startupsequence(int durationInMilliseconds)
 {
@@ -1341,48 +1453,109 @@ void jfk(byte jfk)
       ledControl.setRow(0, 3, 0);
     }
 }
+
+void testDigits()
+{
+  
+}
     
 void lunarDecentSim(){
   lampit(0,0,0, 16);
   int totalSeconds = 256;
   uint32_t timer2 = millis();
+  uint32_t alarmTimer = millis();
   int i=0;
   toggle = 0;
+  toggle1201 = 0;
+  toggle1202 = 0;
+  alarmStatus = 0;
   while(i < totalSeconds){
-    if(toggle == 1)
+    if(toggle)
     {
       lampit(100,100,0,6);
-    }    
+    }
+    
+    if(toggle1201)
+    {
+    alarmStatus = 1;
+    toggle1201 = 0;
+    valueForDisplay[4]= 1201;
+    valueForDisplay[5]= 1201;
+    setDigits();
+      for(int i=1;i<4;i++) 
+      {
+        ledControl.setRow(i,0,B00000000);
+        ledControl.setRow(i,1,B00000000); 
+        if(i == 3)
+        {
+          for(int d=0;d<6;d++) 
+          {
+           ledControl.setRow(i,d,B00000000);
+          }
+        }
+      }      
+    }
+    
+    if(toggle1202)
+    {
+    alarmStatus = 1;
+    toggle1202 = 0;
+    valueForDisplay[4]= 1202;
+    valueForDisplay[5]= 1202;
+    setDigits();
+      for(int i=1;i<4;i++) 
+      {
+        ledControl.setRow(i,0,B00000000);
+        ledControl.setRow(i,1,B00000000); 
+        if(i == 3)
+        {
+          for(int d=0;d<6;d++) 
+          {
+           ledControl.setRow(i,d,B00000000);
+          }
+        }
+      }      
+     } 
+            
   /////////////////////////
   //     1201 Alarm     //
   /////////////////////// 
-      if(i > 8 && i < 18){
-        toggle = 1;
-        if(i == 9) {
-           for(int t=1;t<4;t++) {
-            for(int d=0;d<6;d++) {
-                ledControl.setRow(t,d,B00000000);
-              }
+    if(i > 8 && i < 18)
+      {       
+       toggle = 1;
+       if(i < 10)
+       {
+        for(int i=1;i<4;i++) { 
+          for(int d=0;d<6;d++) 
+          {
+           ledControl.setRow(i,d,B00000000);
           }
+        }
+       }
+       if(i > 10 && !alarmStatus)
+       {
+        toggle1201 = 1;
+       }       
+      if (alarmTimer > millis())  alarmTimer = millis();
+      if (millis() - alarmTimer >= 500 && millis() - alarmTimer < 1000) 
+      {
+        setLamp(yellow, lampRestart);
       }
-       if(i > 10 && i < 18){
-          valueForDisplay[4]= 1201;
-          valueForDisplay[5]= 1201;
-          setDigits();
-           for(int i=1;i<4;i++) {
-                ledControl.setRow(i,0,B00000000);
-                ledControl.setRow(i,1,B00000000); 
-                if(i == 3){
-                   for(int d=0;d<6;d++) {
-                     ledControl.setRow(i,d,B00000000);
-                   }
-                }     
-            }
-            delay(4000);
-            toggle = 0;
-            i = 18;        
-         }
+      if (millis() - alarmTimer >= 1000) {
+        setLamp(off, lampRestart);
+        alarmTimer = millis(); // reset the timer
       }
+  }
+
+  if (i == 18)
+  {
+    alarmStatus = 0;
+    toggle = 0;
+    toggle1201 = 0;
+    setLamp(off, lampRestart);
+    alarmTimer = millis(); // reset the timer
+  }
+        
   /////////////////////////
   //       END 1201     //
   ///////////////////////   
@@ -1390,38 +1563,94 @@ void lunarDecentSim(){
    ////////////////////////
   //     1202 Alarm     //
   /////////////////////// 
-      if(i > 47 && i < 62){
-        toggle = 1; 
-        lampit(100,100,0,6);       
-        if(i == 50) {
-           for(int t=1;t<4;t++) {
-            for(int d=0;d<6;d++) {
-                ledControl.setRow(t,d,B00000000);
-              }
+      if(i > 47 && i < 52){
+       toggle = 1;
+       if(i < 49)
+       {
+        for(int i=1;i<4;i++) { 
+          for(int d=0;d<6;d++) 
+          {
+           ledControl.setRow(i,d,B00000000);
           }
+        }
+       }
+       if(i > 49 && !alarmStatus)
+       {
+        toggle1202 = 1;
+       }
+      if (alarmTimer > millis())  alarmTimer = millis();
+      if (millis() - alarmTimer >= 500 && millis() - alarmTimer < 1000) 
+      {
+        setLamp(yellow, lampRestart);
       }
-       if(i > 49 && i < 62){
-          valueForDisplay[4]= 1202;
-          valueForDisplay[5]= 1202;
-          setDigits();
-           for(int i=1;i<4;i++) {
-                ledControl.setRow(i,0,B00000000);
-                ledControl.setRow(i,1,B00000000); 
-                if(i == 3){
-                   for(int d=0;d<6;d++) {
-                     ledControl.setRow(i,d,B00000000);
-                   }
-                }     
-            }
-            delay(4000);
-            toggle = 0;
-            i = 62;
-         }
-      }
+      if (millis() - alarmTimer >= 1000) {
+        setLamp(off, lampRestart);
+        alarmTimer = millis(); // reset the timer
+      }     
+  }
+  if (i == 52)
+  {
+    toggle = 0;
+    toggle1202 = 0;
+    setLamp(off, lampRestart);
+    alarmTimer = millis(); // reset the timer
+  }    
   /////////////////////////
   //       END 1202     //
   ///////////////////////   
 
+
+  /////////////////////////
+  //     PROGRAM 65     //
+  /////////////////////// 
+  if (i > 75 && i <= 82) 
+  {
+    printProg(65);
+    if(i > 75 && i <= 80)
+    {
+    printVerb(06);
+    printNoun(60);
+    if (alarmTimer > millis())  alarmTimer = millis();
+      if (millis() - alarmTimer >= 500 && millis() - alarmTimer < 1000) 
+      {
+        ledControl.setIntensity(0, 3);
+      }
+      if (millis() - alarmTimer >= 1000) {
+        ledControl.setIntensity(0, 15);
+        alarmTimer = millis(); // reset the timer
+      }
+    }     
+  }
+
+  if (i > 80 && i <= 92)
+  {
+      printNoun(68);
+      printVerb(16);
+      ledControl.setIntensity(0, 15);
+  }
+  /////////////////////////
+  //     PROGRAM 66     //
+  /////////////////////// 
+  if (i > 92 && i <= 99) 
+  {
+    printProg(66);
+    if(i > 75 && i <= 98)
+    {
+    if (alarmTimer > millis())  alarmTimer = millis();
+      if (millis() - alarmTimer >= 500 && millis() - alarmTimer < 1000) 
+      {
+        ledControl.setIntensity(0, 3);
+      }
+      if (millis() - alarmTimer >= 1000) {
+        ledControl.setIntensity(0, 15);
+        alarmTimer = millis(); // reset the timer
+      }
+    }
+    if (i > 98)
+    {
+      ledControl.setIntensity(0, 15);
+    }     
+  }
    ////////////////////////
   //  ALT & VEL LIGHTS  //
  //////////////////////// 
@@ -1432,17 +1661,34 @@ void lunarDecentSim(){
   /////////////////////////
   //   END ALT & VEL    //
  ////////////////////////   
-      if(toggle == 0 && i < 225)
+      if(!toggle && !toggle1201 && !toggle1202 && i < 225)
       {
         lampit(0,0,0,6);
         if (timer2 > millis())  timer2 = millis();
-        if (millis() - timer2 >= 300) {
-          int randNumb = random(0, 30); 
-          valueForDisplay[4]= 3120 + randNumb;
-          valueForDisplay[5]= 6390 + randNumb;
-          valueForDisplay[6]= 3910 + randNumb;
-          setDigits();            
-        timer2 = millis(); // reset the timer
+        if (millis() - timer2 >= 300 && toggle == 0) {
+        int randNumb = random(0, 10);
+        fwdVelocity = fwdVelocity + randNumb;
+        verticalSpeed = verticalSpeed - (randNumb + 10);
+        radarAltitude = radarAltitude - randNumb;
+         if (fwdVelocity > 0)
+         {
+          fwdVelocity = 0; 
+         }
+         if (verticalSpeed > 0)
+         {
+          verticalSpeed = 0; 
+         }
+         if (radarAltitude > 0)
+         {
+          radarAltitude = 0; 
+         }
+         
+          valueForDisplay[4]= fwdVelocity;
+          valueForDisplay[5]= verticalSpeed;
+          valueForDisplay[6]= radarAltitude;
+          setDigits();
+          ledControl.setRow(2, 0, B00100100);            
+          timer2 = millis(); // reset the timer
         }
       }
       if(toggle == 0 && i > 225)
@@ -1455,6 +1701,7 @@ void lunarDecentSim(){
         setLamp(white, lampNoAtt);
         setLamp(off, lampVel);
       }
+      
       if (activityTimer > millis())  activityTimer = millis();
       if (millis() - activityTimer >= 1000) {
           i++;
@@ -1463,7 +1710,10 @@ void lunarDecentSim(){
       if (compActivityTimer > millis())  compActivityTimer = millis();
       if (millis() - compActivityTimer >= 200) {
           compActivityTimer = millis(); // reset the timer
-          compAct();
+          if(!toggle)
+          {
+            compAct();
+          }
       }
       if(toggle == 0 && i >= 254)
       {
@@ -1550,7 +1800,7 @@ void setup()
 
     for (int index = 0; index < 4; index++) {
         ledControl.shutdown(index,false);
-        ledControl.setIntensity(index, 8);
+        ledControl.setIntensity(index, 15);
         ledControl.clearDisplay(index);
     }
 
@@ -1595,7 +1845,7 @@ void setup()
 }
 
 void loop()
-{
+{    
     timer.tick(); // toggle on / off
     if (toggle == true)
     {
@@ -1717,9 +1967,9 @@ void loop()
     }
     else if (action == lunarDecent) {
         printProg(64);
-        playTrack(1);
+        //playTrack(1);
         delay(1000);
-        lunarDecentSim();    // V16N68 Set The Date
+        lunarDecentSim();    // V16N68
     }
     else if (action == PlayAudioclip) 
     {   // V21N98 Play Audio Clip
