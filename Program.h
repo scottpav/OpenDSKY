@@ -1,6 +1,7 @@
+#include "BitBool.h"
+
 #ifndef PROGRAM_H
 #define PROGRAM_H
-
 enum Action: int {
     none                        = 0,
     displayIMUAttitude          = 1,
@@ -12,7 +13,11 @@ enum Action: int {
     PlayAudioclip               = 7,
     PlaySelectedAudioclip       = 8,
     displayIMUGyro              = 9,
-    lunarDecent                 = 10
+    lunarDecent                 = 10,
+    countUpTimer                = 11,
+    idleMode                    = 12,
+    pleasePreform               = 13,
+    apollo13Startup             = 14
 };
 
 enum Mode: int {
@@ -90,7 +95,8 @@ enum keyValues: int
 enum verbValues: int
 { // Verbs 0,35,16,21
     verbNone                = 0,
-    verbLampTest            = 35,
+    verbLampTest            = 35,    
+    verbExecuteMajorMode    = 37,
     verbDisplayDecimal      = 16,
     verbSetComponent        = 21
 };
@@ -98,13 +104,17 @@ enum verbValues: int
 enum nounValues: int 
 { // Nouns 0,17,36,37,43,68,98
     nounNone                = 0,
+    nounIdleMode            = 00,
+    nounPleasePreform       = 6,
     nounIMUAttitude         = 17,
     nounIMUgyro             = 18,
+    nounApollo13StartUp     = 20,
+    nounCountUpTimer        = 34,
     nounClockTime           = 36,
     nounDate                = 37,
     nounLatLongAltitude     = 43,
     nounRangeTgoVelocity    = 68,
-    nounSelectAudioclip      = 98
+    nounSelectAudioclip     = 98
 };
 
 enum registerDisplayPositions: int 
@@ -171,6 +181,7 @@ byte count = 0;
 byte mode = modeIdle;
 byte oldMode = modeIdle;
 bool toggle = false;
+bool stbyToggle = false;
 bool toggle600 = false;
 bool toggle250 = false;
 bool toggled250 = false;
@@ -191,6 +202,8 @@ bool printregtoggle = true;
 bool uplink_compact_toggle = true;
 unsigned long blink_previousMillis = 0; 
 const long blink_interval = 600;
+int pressedDuration = 0;
+int pressedDuration2 = 0;
 int clipnum = 1;
 int clipcount = 0;
 int fwdVelocity = 534;
@@ -199,6 +212,8 @@ int radarAltitude = 3231;
 int lat = 0;
 int lon = 0;
 int alt = 0;
+uint32_t oneSecTimer = millis();
+uint32_t pressedTimer2 = millis();
 
 // IMU https://github.com/griegerc/arduino-gy521/blob/master/gy521-read-angle/gy521-read-angle.ino
 const int ACCEL_OFFSET   = 200;
@@ -215,11 +230,22 @@ const int GYRO_OFFSET_Z = 0; // change this to your system until gyroCorrZ displ
 const int ACC_OFFSET_X = 2; // change this to your system until accAngleX displays 0 if the DSKY sits still
 const int ACC_OFFSET_Y = 3; // change this to your system until accAngleY displays 0 if the DSKY sits still
 const int ACC_OFFSET_Z = 0;  // change this to your system until accAngleZ displays 0 if the DSKY sits still
-
+int timerSeconds = 0;
+int timerMinutes = 0;
+int timerHours   = 0;
 int globaltimer=0;
 bool global_state_1sec=false;
 bool global_state_600msec=false;
-
+BitBool< 64, false > buffer ={ 
+                        B11111110,
+                        B11111100,
+                        B11111000,
+                        B11110000,
+                        B11100000,
+                        B11000000,
+                        B10000000,
+                        B00000000
+                      };
 // GPS Definitions
 bool GPS_READ_STARTED = true;
 bool gpsread = true;
@@ -228,6 +254,8 @@ bool gpsfix = false;
 // variables for Time display (10th of a second, 100th of a second)
 unsigned long previousMillis = 0;
 int oldSecond = 0;
+uint32_t flashTimer = millis();
+uint32_t pressedTimer = millis();
 
 // 1sec toogle
 bool toggle_timer(void *)
