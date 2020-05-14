@@ -8,8 +8,11 @@
 #include <timer.h>
 #include "Sound.h"
 #include "Program.h"
+#include "BitBool.h"
 #define PIN            6
 #define NUMPIXELS      18
+#define GPS_SW         7 
+
 Adafruit_NeoPixel neoPixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 LedControl ledControl = LedControl(12,10,11,4);
 RTC_DS1307 realTimeClock;
@@ -32,12 +35,31 @@ void validateAction()
         //noun = noun_old;
         newAction = false;
     }
+    else if ((verb == verbExecuteMajorMode) && (noun == nounIdleMode) && (noun < 1)) {
+        action = idleMode;
+        newAction = false;
+    }
+    else if ((verb == verbExecuteMajorMode) && (noun == nounPleasePreform)) {
+        action = pleasePreform;
+        newAction = false;
+    }    
+    else if ((verb == verbDisplayDecimal) && (noun == nounApollo13StartUp)) {
+        action = apollo13Startup;
+        newAction = false;
+    }
     else if ((verb == verbDisplayDecimal) && (noun == nounIMUAttitude)) {
         action = displayIMUAttitude;
         newAction = false;
     }
     else if ((verb == verbDisplayDecimal) && (noun == nounIMUgyro)) {
         action = displayIMUGyro;
+        newAction = false;
+    }
+     else if ((verb == verbDisplayDecimal) && (noun == nounCountUpTimer)) {
+        timerSeconds = 0;
+        timerMinutes = 0;
+        timerHours   = 0;
+        action = countUpTimer;
         newAction = false;
     }
     else if ((verb == verbDisplayDecimal) && (noun == nounClockTime)) {
@@ -512,8 +534,11 @@ void processIdleMode()
         }
         else if (keyValue == keyProceed) {
             // program
-            mode = modeInputProgram;
-            fresh = false;
+            if(action != pleasePreform)
+            {
+              mode = modeInputProgram;
+              fresh = false;
+            }
         }
         else if (keyValue == keyReset) {
             // resrt reeor
@@ -578,12 +603,13 @@ void processVerbInputMode()
                 // es wurde ein neues Verb eingegeben, daher muss noun auf 0 gesetzt werden
                 noun_old2 = noun_old;
                 noun_old = noun;
-                noun = 0;
+                //noun = 0;
                 printNoun(noun);
             }
             // wenn das neue Verb ein anderes als das neue Verb is, dann muss noun auf 0 gesetzt werden
 
             if ((verb != verbDisplayDecimal)
+                && (verb != verbExecuteMajorMode)
                 && (verb != verbSetComponent)
                 && (verb != verbLampTest)
                 && (verb != verbNone)) {
@@ -632,13 +658,15 @@ void processVerbInputMode()
             }
             else if (keyValue == keyProceed) {
                 //program
-                mode = modeInputProgram;
-                //turnOffLampNumber(lampVerb);
-                setLamp(green, lampVerb);
-                count = 0;
-                fresh = false;
+                if((action != pleasePreform))
+                {
+                  mode = modeInputProgram;
+                  //turnOffLampNumber(lampVerb);
+                  setLamp(green, lampVerb);
+                  count = 0;
+                  fresh = false;
+                }
             }
-
         }
 
         if ((keyValue <= keyNumber9) && (count < 2)) {
@@ -685,7 +713,10 @@ void processNounInputMode()
             noun = ((nounNew[0] * 10) + (nounNew[1]));
             fresh = false;
             if ((noun != nounIMUAttitude)
+                && (noun != nounIdleMode)
+                && (noun != nounPleasePreform)
                 && (noun != nounIMUgyro)
+                && (noun != nounCountUpTimer)
                 && (noun != nounClockTime)
                 && (noun != nounLatLongAltitude)
                 && (noun != nounRangeTgoVelocity)
@@ -735,11 +766,14 @@ void processNounInputMode()
             fresh = false;
         }
         if ((keyValue == keyProceed) && (fresh == true)) {
-            mode = modeInputProgram;
-            setLamp(green, lampNoun);
-            count = 0;
-            fresh = false;
-            //program
+            if(action != pleasePreform)
+            {
+              mode = modeInputProgram;
+              setLamp(green, lampNoun);
+              count = 0;
+              fresh = false;
+              //program
+            }
         }
         if ((keyValue <= keyNumber9)
             && (count < 2)) {
@@ -1048,6 +1082,242 @@ void startupsequence(int durationInMilliseconds)
     
 }
 
+void actionPleasePreform()
+{
+  keyValue = readKeyboard();
+  if(!stbyToggle)
+  {
+    setLamp(off, lampSTBY);
+    prog = 6;
+    verb = 50;
+    noun = 25;
+    printProg(prog);
+    printVerb(verb);
+    printNoun(noun);
+    valueForDisplay[4]= 62;
+    valueForDisplay[5]= 0;
+    valueForDisplay[6]= 0;
+    setDigits();
+      
+    if (flashTimer > millis())  flashTimer = millis();
+    if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
+    {
+      ledControl.setIntensity(0, 3);
+    }
+    if (millis() - flashTimer >= 1000) 
+    {
+      ledControl.setIntensity(0, 15);
+      flashTimer = millis(); // reset the timer
+    }
+  }
+
+  while (keyValue == keyProceed && !stbyToggle)
+  {
+    if(!stbyToggle)
+    {
+      if (flashTimer > millis())  flashTimer = millis();
+      if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
+      {
+        ledControl.setIntensity(0, 3);
+      }
+      if (millis() - flashTimer >= 1000) 
+      {
+        ledControl.setIntensity(0, 15);
+        flashTimer = millis(); // reset the timer
+      }
+      
+      if (pressedTimer > millis())  pressedTimer = millis();
+      if (millis() - pressedTimer >= 1000) 
+      {
+        pressedDuration++;
+        pressedTimer = millis(); // reset the timer
+      }
+      
+      if(pressedDuration > 4)
+      {
+        setLamp(off, lampProg);
+        setLamp(off, lampVerb);
+        setLamp(off, lampNoun);
+        for (int index = 0; index < 4; index++) {ledControl.clearDisplay(index); }
+        delay(300);
+        stbyToggle = 1;
+        keyValue = 0;
+      }   
+    }
+  }
+    
+  if(stbyToggle == 1)
+  {
+    setLamp(white, lampSTBY);
+  }
+  
+  while (keyValue == keyProceed && stbyToggle == 1)
+  {
+    if (pressedTimer2 > millis())  pressedTimer2 = millis();
+    if (millis() - pressedTimer2 >= 1000) 
+    {
+     pressedDuration2++;
+     pressedTimer2 = millis(); // reset the timer
+    }
+    if(pressedDuration2 > 4)
+    {
+      stbyToggle = 0;
+      keyValue = 0;
+      verb = 16;
+      verb = 20;
+      prog = 46;
+      actionApollo13Startup();
+      action = apollo13Startup;
+      validateAction();
+    }
+  } 
+}
+
+void actionApollo13Startup()
+{
+  ledControl.setIntensity(0, 15);
+  setLamp(off, lampSTBY);
+  delay(1000);
+  setLamp(white, lampUplinkActy);
+  delay(1000);
+  setLamp(yellow, lampTemp);
+  delay(1000);
+  setLamp(white, lampNoAtt);
+  delay(1000);
+  setLamp(yellow, lampProgCond);
+  delay(1000);
+  setLamp(white, lampSTBY);
+  delay(1000);
+  setLamp(yellow, lampTracker);
+  delay(1000);
+  
+  setLamp(white, lampOprErr);
+  setLamp(off, lampUplinkActy);
+  setLamp(off, lampTemp);
+  setLamp(off, lampNoAtt);
+  setLamp(off, lampProgCond);
+  setLamp(off, lampSTBY);
+  setLamp(off, lampTracker);
+  setLamp(off, lampOprErr);
+  
+  for(int i=0;i<5;) 
+  {
+    if (flashTimer > millis())  flashTimer = millis();
+    if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
+    {
+      setLamp(yellow, lampRestart);
+    }
+    if (millis() - flashTimer >= 1000) 
+    {
+      setLamp(off, lampRestart);
+      flashTimer = millis(); // reset the timer
+      i++;
+    }
+  } 
+  setLamp(green, lampNoun);
+  delay(500);
+  setLamp(green, lampProg);
+  delay(500);
+  setLamp(green, lampVerb);
+  delay(500);
+  setLamp(green, lampCompActy);
+  delay(500);
+  stbyToggle = 0;
+  setLamp(off, lampSTBY);
+  printProg(prog);
+  printVerb(verb);
+  printNoun(noun);
+  valueForDisplay[4]= 0;
+  valueForDisplay[5]= 180;
+  valueForDisplay[6]= 0;
+  setDigits();
+  ledControl.setRow(1, 0, B00100100);
+  delay(5000);
+  setLamp(off, lampCompActy);
+  prog = 0;
+  noun = 36;
+  verb = 16;
+  printProg(prog);
+  printNoun(noun);
+  printVerb(verb);
+  pressedDuration = 0;
+  pressedDuration2 = 0;
+  action = actionReadTime;
+  validateAction();
+}
+
+void actionIdleMode()
+{
+  ledControl.setRow(0,2,B01111110);
+  ledControl.setRow(0,3,B01111110);  
+  ledControl.setRow(0,4,B01111110);
+  ledControl.setRow(0,5,B01111110);
+  valueForDisplay[4]= 0;
+  valueForDisplay[5]= 0;
+  valueForDisplay[6]= 0;
+  setDigits();
+  delay(2000);
+  
+  for(int reg=1;reg<4;reg++) 
+      { 
+          for(int digit=0;digit<6;digit++) 
+          {
+                ledControl.setRow(reg,digit,B01111110);
+                delay(3);
+                ledControl.setRow(reg,digit,B01111100);
+                delay(3);
+                ledControl.setRow(reg,digit,B01111000);
+                delay(3);
+                ledControl.setRow(reg,digit,B01110000);
+                delay(3);
+                ledControl.setRow(reg,digit,B01100000);
+                delay(3);
+                ledControl.setRow(reg,digit,B01000000);
+                delay(3);
+                ledControl.setRow(reg,digit,B00000000);
+                delay(3);
+                ledControl.setRow(reg,digit,B00000000);
+                delay(3);
+          }
+      }
+  setLamp(off, lampNoAtt);
+  action = 0;
+  mode = modeIdle;
+}
+
+void actionCountUpTimer()
+{
+  if (oneSecTimer > millis())  oneSecTimer = millis();
+  if (millis() - oneSecTimer >= 1000) 
+  {
+    timerSeconds++;
+    if(timerSeconds > 59)
+    {
+      timerMinutes++;
+      timerSeconds = 0;
+    }
+    if(timerMinutes > 59)
+    {
+      timerHours++;
+      timerMinutes = 0;
+    }
+    oneSecTimer = millis();
+    valueForDisplay[4]= timerHours;
+    valueForDisplay[5]= timerMinutes;
+    valueForDisplay[6]= timerSeconds;
+    setDigits();
+    Serial.println(timerSeconds);
+  }  
+  if (compActivityTimer > millis())  compActivityTimer = millis();
+  if (millis() - compActivityTimer >= 200) {
+      compActivityTimer = millis(); // reset the timer
+      if(!toggle)
+      {
+        compAct();
+      }
+  }
+}
+
 void actionReadTime()
 {
     // read time from real-time clock (RTC)
@@ -1069,19 +1339,31 @@ void actionReadTime()
 void actionReadGPS()
 { // Read GPS
   setLamp(white, lampNoAtt);
-  if (toggle == true && gpsread == true)
-  {
-    //ALT_light_on();
-    if (gpsfix == false)
+  if (gpsfix == false)
     {
+      if (flashTimer > millis())  flashTimer = millis();
+      if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
+      {
         setLamp(yellow, lampTracker);
+      }
+      if (millis() - flashTimer >= 1000) 
+      {
+        setLamp(off, lampTracker);
+        flashTimer = millis(); // reset the timer
+      }
+      setLamp(off, lampAlt);
+      setLamp(off, lampVel);
     }
     else if (gpsfix == true)
     {
-        setLamp(off, lampPosition);
+        setLamp(off, lampTracker);
+        setLamp(white, lampAlt);
+        setLamp(yellow, lampVel);
     }
-    
-    digitalWrite(7,HIGH);
+  if (toggle == true && gpsread == true)
+  {
+    //ALT_light_on()
+    digitalWrite(GPS_SW,HIGH);
     delay(100);
     gpsread = false;
     // int index = 0;
@@ -1098,10 +1380,8 @@ void actionReadGPS()
           setLamp(off, lampTracker);
       }
     }
-    digitalWrite(7,LOW);
-    
-    setLamp(off, lampAlt);
-    setLamp(off, lampVel);
+    digitalWrite(GPS_SW,LOW);
+   
     //if (gps.location.lat() != 0)
     if (gps.location.isValid() == 1)
     {
@@ -1425,43 +1705,39 @@ void actionReadIMU(int imumode)
 }
 
 
-void jfk(byte jfk)
-{
-    if (audioTrack > 3) {
-        audioTrack = 1;
-    }
-
-    while (audioTrack != jfk) {
-        pinMode(9, OUTPUT);
-        delay(100);
-        pinMode(9, INPUT);
-        delay(100);
-        audioTrack++;
-        if (audioTrack > 3) {
-            audioTrack = 1;
-        }
-    }
-
-    pinMode(9, OUTPUT);
-    delay(100);
-    pinMode(9, INPUT);
-    audioTrack++;
-    currentProgram = programNone;
-    if (currentProgram == 0)
-    {
-      ledControl.setRow(0, 2, 0);
-      ledControl.setRow(0, 3, 0);
-    }
-}
-
-void testDigits()
-{
-  
-}
+//void jfk(byte jfk)
+//{
+//    if (audioTrack > 3) {
+//        audioTrack = 1;
+//    }
+//
+//    while (audioTrack != jfk) {
+//        pinMode(9, OUTPUT);
+//        delay(100);
+//        pinMode(9, INPUT);
+//        delay(100);
+//        audioTrack++;
+//        if (audioTrack > 3) {
+//            audioTrack = 1;
+//        }
+//    }
+//
+//    pinMode(9, OUTPUT);
+//    delay(100);
+//    pinMode(9, INPUT);
+//    audioTrack++;
+//    currentProgram = programNone;
+//    if (currentProgram == 0)
+//    {
+//      ledControl.setRow(0, 2, 0);
+//      ledControl.setRow(0, 3, 0);
+//    }
+//}
     
 void lunarDecentSim(){
+  digitalWrite(5, LOW);
   lampit(0,0,0, 16);
-  int totalSeconds = 256;
+  int totalSeconds = 242;
   uint32_t timer2 = millis();
   uint32_t alarmTimer = millis();
   int i=0;
@@ -1516,7 +1792,82 @@ void lunarDecentSim(){
         }
       }      
      } 
-            
+
+    if(i == 8)
+    {
+      radarAltitude = 3000;  
+    }
+
+    if(i == 24)
+    {
+      radarAltitude = 2000;  
+    }
+
+    if(i == 59)
+    {
+      radarAltitude = 700;
+      verticalSpeed = 100;  
+    }
+
+    if(i == 69)
+    {
+      radarAltitude = 540; 
+      verticalSpeed = 300;  
+    }
+
+    if(i == 78)
+    {
+      fwdVelocity = 40;
+      radarAltitude = 400; 
+      verticalSpeed = 90;  
+    }
+    
+    if(i == 140)
+    {
+      radarAltitude = 250; 
+      verticalSpeed = 40;  
+    }    
+    
+    if(i == 160)
+    {
+      radarAltitude = 200; 
+      verticalSpeed = 35;  
+    }
+
+    if(i == 170)
+    {
+      radarAltitude = 100; 
+      verticalSpeed = 15;  
+    }
+
+     if(i == 180)
+    {
+      radarAltitude = 70; 
+      verticalSpeed = 10;  
+    }
+
+     if(i == 190)
+    {
+      fwdVelocity = 19;
+      radarAltitude = 50; 
+      verticalSpeed = 25;  
+    }
+
+   if(i == 200)
+    {
+      fwdVelocity = 6;
+      radarAltitude = 20; 
+      verticalSpeed = 10;  
+    }
+
+    if(i == 220)
+    {
+      fwdVelocity = 14;
+      radarAltitude = 10; 
+      verticalSpeed = 4;  
+    }
+
+    
   /////////////////////////
   //     1201 Alarm     //
   /////////////////////// 
@@ -1661,16 +2012,35 @@ void lunarDecentSim(){
   /////////////////////////
   //   END ALT & VEL    //
  ////////////////////////   
-      if(!toggle && !toggle1201 && !toggle1202 && i < 225)
+      if(!toggle && !toggle1201 && !toggle1202 && i < 256)
       {
         lampit(0,0,0,6);
         if (timer2 > millis())  timer2 = millis();
         if (millis() - timer2 >= 300 && toggle == 0) {
-        int randNumb = random(0, 10);
-        fwdVelocity = fwdVelocity + randNumb;
-        verticalSpeed = verticalSpeed - (randNumb + 10);
+        int randNumb = random(0, 3);
+        fwdVelocity = fwdVelocity - randNumb;
+        verticalSpeed = verticalSpeed + randNumb;
         radarAltitude = radarAltitude - randNumb;
-         if (fwdVelocity > 0)
+        if(i > 10 && i < 120)
+        {
+        //fwdVelocity = fwdVelocity - (randNumb + 3);
+        //verticalSpeed = verticalSpeed + (randNumb - 4);
+        //radarAltitude = radarAltitude - (randNumb + 5);
+        }
+        if(i > 120 && i < 192)
+        {
+        //fwdVelocity = fwdVelocity - (randNumb);
+        //verticalSpeed = verticalSpeed + (randNumb);
+        //radarAltitude = radarAltitude - (randNumb);
+        }    
+        if(i > 192 && i < 225)
+        {
+        //fwdVelocity = fwdVelocity - (randNumb + 10);
+        //verticalSpeed = verticalSpeed - randNumb;
+        //radarAltitude = radarAltitude - (randNumb);
+        }
+         
+         if (fwdVelocity < 0)
          {
           fwdVelocity = 0; 
          }
@@ -1678,11 +2048,17 @@ void lunarDecentSim(){
          {
           verticalSpeed = 0; 
          }
-         if (radarAltitude > 0)
+         if (radarAltitude < 0)
          {
           radarAltitude = 0; 
          }
-         
+
+         if(i > 225) 
+         {
+          fwdVelocity = 0; 
+          verticalSpeed = 0; 
+          radarAltitude = 0; 
+         }
           valueForDisplay[4]= fwdVelocity;
           valueForDisplay[5]= verticalSpeed;
           valueForDisplay[6]= radarAltitude;
@@ -1715,8 +2091,9 @@ void lunarDecentSim(){
             compAct();
           }
       }
-      if(toggle == 0 && i >= 254)
+      if(toggle == 0 && i >= 248)
       {
+        digitalWrite(5, LOW);
         setLamp(off, lampUplinkActy);
         setLamp(off, lampCompActy);
         printProg(00);
@@ -1793,8 +2170,9 @@ void setup()
     pinMode(A1, INPUT);
     pinMode(A2, INPUT);
     pinMode(A7, INPUT);
-    pinMode(7, OUTPUT);
-    digitalWrite(7, LOW);
+    pinMode(GPS_SW, OUTPUT);        
+    digitalWrite(GPS_SW, LOW);
+    soundSetup();
     randomSeed(analogRead(A7));
     neoPixels.begin();
 
@@ -1816,7 +2194,7 @@ void setup()
     timer.every(1000, toggle_timer);
     timer.every(600, toggle_timer_600);
     timer.every(100, toggle_timer_250);
-    soundSetup();
+    
   Serial.begin(9600);
   //Light up PRO, NOUN, VERB and NO ATT
     startUp();
@@ -1842,6 +2220,7 @@ void setup()
     delay(100);
     setLamp(green, lampProg);
     delay(100);
+   // action = lunarDecent;
 }
 
 void loop()
@@ -1917,14 +2296,23 @@ void loop()
         clearRegister(2);
         clearRegister(3);
     }
-
-    if (mode == modeIdle) {
+    if (stbyToggle == 1)
+    {
+        setLamp(white, lampSTBY);
+    }
+    if(action == apollo13Startup)
+    {
+      setLamp(off, lampSTBY);
+    }
+        
+    if (mode == modeIdle) 
+    {
         executeIdleMode();
-        if (action == none)
+        if (action == none || stbyToggle == 1)
         {
             setLamp(white, lampSTBY);
         }
-        else if (action != none)
+        else if (action != none && !stbyToggle)
         {
             setLamp(off, lampSTBY);
         }
@@ -1946,12 +2334,20 @@ void loop()
         setLamp(off, lampSTBY);
         executeLampTestModeWithDuration(2000);
     }
-    
     if (action == displayIMUAttitude) {
         actionReadIMU(Accel);  // V16N17 ReadIMU Accel
     }
+    if (action == idleMode) {
+        actionIdleMode();  // V37N00 ExecuteMajorProgram (IdleMode)
+    }
+    if (action == pleasePreform) {
+        actionPleasePreform();  // V37N06
+    }
     if (action == displayIMUGyro) {
         actionReadIMU(Gyro);  // V16N18 ReadIMU Gyro
+    }
+     else if (action == countUpTimer) {
+        actionCountUpTimer();   // V16N34 StopWatch
     }
     else if (action == displayRealTimeClock) {
         actionReadTime();   // V16N36 ReadTime
@@ -1962,12 +2358,12 @@ void loop()
     else if (action == setTime) {
         actionSetTime();    // V21N36 Set The Time
     }
-    else if (action == setDate) {
-        actionSetDate();    // V21N37 Set The Date
+    else if (action == apollo13Startup) {
+        actionApollo13Startup();
     }
     else if (action == lunarDecent) {
         printProg(64);
-        //playTrack(1);
+        playTrack(1);
         delay(1000);
         lunarDecentSim();    // V16N68
     }
