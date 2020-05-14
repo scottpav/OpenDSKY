@@ -1,5 +1,3 @@
-#include "BitBool.h"
-
 #ifndef PROGRAM_H
 #define PROGRAM_H
 enum Action: int {
@@ -236,16 +234,7 @@ int timerHours   = 0;
 int globaltimer=0;
 bool global_state_1sec=false;
 bool global_state_600msec=false;
-BitBool< 64, false > buffer ={ 
-                        B11111110,
-                        B11111100,
-                        B11111000,
-                        B11110000,
-                        B11100000,
-                        B11000000,
-                        B10000000,
-                        B00000000
-                      };
+
 // GPS Definitions
 bool GPS_READ_STARTED = true;
 bool gpsread = true;
