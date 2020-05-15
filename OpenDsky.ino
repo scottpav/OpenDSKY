@@ -1083,10 +1083,10 @@ void startupsequence(int durationInMilliseconds)
 
 void actionPleasePerform()
 {
-  setLamp(green, lampCompActy);
   keyValue = readKeyboard();
   if(!stbyToggle)
   {
+    setLamp(green, lampCompActy);
     setLamp(white, lampSTBY);
     prog = 6;
     verb = 50;
@@ -1138,7 +1138,7 @@ void actionPleasePerform()
         setLamp(off, lampProg);
         setLamp(off, lampVerb);
         setLamp(off, lampNoun);
-        setLamp(white, lampCompActy);
+        setLamp(off, lampCompActy);
         for (int index = 0; index < 4; index++) {ledControl.clearDisplay(index); }
         delay(300);
         stbyToggle = 1;
@@ -1151,6 +1151,7 @@ void actionPleasePerform()
   if(stbyToggle == 1)
   {
     setLamp(white, lampSTBY);
+    setLamp(off, lampCompActy);
   }
   
   while (keyValue == keyProceed && stbyToggle == 1)
