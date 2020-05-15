@@ -8,7 +8,6 @@
 #include <timer.h>
 #include "Sound.h"
 #include "Program.h"
-#include "BitBool.h"
 #define PIN            6
 #define NUMPIXELS      18
 #define GPS_SW         7 
@@ -39,8 +38,8 @@ void validateAction()
         action = idleMode;
         newAction = false;
     }
-    else if ((verb == verbExecuteMajorMode) && (noun == nounPleasePreform)) {
-        action = pleasePreform;
+    else if ((verb == verbExecuteMajorMode) && (noun == nounPleasePerform)) {
+        action = pleasePerform;
         newAction = false;
     }    
     else if ((verb == verbDisplayDecimal) && (noun == nounApollo13StartUp)) {
@@ -534,7 +533,7 @@ void processIdleMode()
         }
         else if (keyValue == keyProceed) {
             // program
-            if(action != pleasePreform)
+            if(action != pleasePerform)
             {
               mode = modeInputProgram;
               fresh = false;
@@ -658,7 +657,7 @@ void processVerbInputMode()
             }
             else if (keyValue == keyProceed) {
                 //program
-                if((action != pleasePreform))
+                if((action != pleasePerform))
                 {
                   mode = modeInputProgram;
                   //turnOffLampNumber(lampVerb);
@@ -714,7 +713,7 @@ void processNounInputMode()
             fresh = false;
             if ((noun != nounIMUAttitude)
                 && (noun != nounIdleMode)
-                && (noun != nounPleasePreform)
+                && (noun != nounPleasePerform)
                 && (noun != nounIMUgyro)
                 && (noun != nounCountUpTimer)
                 && (noun != nounClockTime)
@@ -766,7 +765,7 @@ void processNounInputMode()
             fresh = false;
         }
         if ((keyValue == keyProceed) && (fresh == true)) {
-            if(action != pleasePreform)
+            if(action != pleasePerform)
             {
               mode = modeInputProgram;
               setLamp(green, lampNoun);
@@ -1082,12 +1081,13 @@ void startupsequence(int durationInMilliseconds)
     
 }
 
-void actionPleasePreform()
+void actionPleasePerform()
 {
+  setLamp(green, lampCompActy);
   keyValue = readKeyboard();
   if(!stbyToggle)
   {
-    setLamp(off, lampSTBY);
+    setLamp(white, lampSTBY);
     prog = 6;
     verb = 50;
     noun = 25;
@@ -1102,7 +1102,7 @@ void actionPleasePreform()
     if (flashTimer > millis())  flashTimer = millis();
     if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
     {
-      ledControl.setIntensity(0, 3);
+      //ledControl.setIntensity(0, 3);
     }
     if (millis() - flashTimer >= 1000) 
     {
@@ -1118,7 +1118,7 @@ void actionPleasePreform()
       if (flashTimer > millis())  flashTimer = millis();
       if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
       {
-        ledControl.setIntensity(0, 3);
+        //ledControl.setIntensity(0, 3);
       }
       if (millis() - flashTimer >= 1000) 
       {
@@ -1133,15 +1133,17 @@ void actionPleasePreform()
         pressedTimer = millis(); // reset the timer
       }
       
-      if(pressedDuration > 4)
+      if(pressedDuration > 1)
       {
         setLamp(off, lampProg);
         setLamp(off, lampVerb);
         setLamp(off, lampNoun);
+        setLamp(white, lampCompActy);
         for (int index = 0; index < 4; index++) {ledControl.clearDisplay(index); }
         delay(300);
         stbyToggle = 1;
         keyValue = 0;
+        delay(1500);
       }   
     }
   }
@@ -1159,13 +1161,14 @@ void actionPleasePreform()
      pressedDuration2++;
      pressedTimer2 = millis(); // reset the timer
     }
-    if(pressedDuration2 > 4)
+    if(pressedDuration2 > 1)
     {
       stbyToggle = 0;
       keyValue = 0;
       verb = 16;
       verb = 20;
       prog = 46;
+      delay(1500);
       actionApollo13Startup();
       action = apollo13Startup;
       validateAction();
@@ -1178,16 +1181,22 @@ void actionApollo13Startup()
   ledControl.setIntensity(0, 15);
   setLamp(off, lampSTBY);
   delay(1000);
+  playTrack(5);
   setLamp(white, lampUplinkActy);
   delay(1000);
+  playTrack(5);
   setLamp(yellow, lampTemp);
   delay(1000);
+  playTrack(5);
   setLamp(white, lampNoAtt);
   delay(1000);
+  playTrack(5);
   setLamp(yellow, lampProgCond);
   delay(1000);
+  playTrack(5);
   setLamp(white, lampSTBY);
   delay(1000);
+  playTrack(5);
   setLamp(yellow, lampTracker);
   delay(1000);
   
@@ -1200,7 +1209,7 @@ void actionApollo13Startup()
   setLamp(off, lampTracker);
   setLamp(off, lampOprErr);
   
-  for(int i=0;i<5;) 
+  for(int i=0;i<4;) 
   {
     if (flashTimer > millis())  flashTimer = millis();
     if (millis() - flashTimer >= 500 && millis() - flashTimer < 1000) 
@@ -1208,18 +1217,22 @@ void actionApollo13Startup()
       setLamp(yellow, lampRestart);
     }
     if (millis() - flashTimer >= 1000) 
-    {
+    {      
       setLamp(off, lampRestart);
       flashTimer = millis(); // reset the timer
       i++;
     }
   } 
+//  playTrack(5);
   setLamp(green, lampNoun);
   delay(500);
+  //playTrack(5);
   setLamp(green, lampProg);
   delay(500);
+//  playTrack(5);
   setLamp(green, lampVerb);
   delay(500);
+//  playTrack(5);
   setLamp(green, lampCompActy);
   delay(500);
   stbyToggle = 0;
@@ -1232,7 +1245,7 @@ void actionApollo13Startup()
   valueForDisplay[6]= 0;
   setDigits();
   ledControl.setRow(1, 0, B00100100);
-  delay(5000);
+  delay(15000);
   setLamp(off, lampCompActy);
   prog = 0;
   noun = 36;
@@ -2312,11 +2325,17 @@ void loop()
         {
             setLamp(white, lampSTBY);
         }
-        else if (action != none && !stbyToggle)
+        else if (action != none && stbyToggle == 1)
+        {
+            setLamp(white, lampSTBY);
+        }
+        else if (action != none)
         {
             setLamp(off, lampSTBY);
         }
     }
+
+    
     else if (mode == modeInputVerb) {
         executeVerbInputMode();
         setLamp(off, lampSTBY);
@@ -2340,8 +2359,8 @@ void loop()
     if (action == idleMode) {
         actionIdleMode();  // V37N00 ExecuteMajorProgram (IdleMode)
     }
-    if (action == pleasePreform) {
-        actionPleasePreform();  // V37N06
+    if (action == pleasePerform) {
+        actionPleasePerform();  // V37N06
     }
     if (action == displayIMUGyro) {
         actionReadIMU(Gyro);  // V16N18 ReadIMU Gyro
