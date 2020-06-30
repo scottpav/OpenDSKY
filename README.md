@@ -8,7 +8,6 @@
 
 | Verb | Noun | Function |
 |:-------------:|:-------------:| -----|
-| 00 | 06 | Peform Task |
 | 16 | 17 | Display IMU Gyro XYZ |
 | 16 | 18 | Display IMU Accel XYZ |
 | 16 | 19 | Display Date(Month/Day) & Time |
@@ -20,7 +19,7 @@
 | 16 | 87 | Display IMU Values (All) |
 | 21 | 36 | Set the Time on RTC Module |
 | 35 | 00 | Lamp Test |
-| 37 | 00 | Idle Mode P00 |
+| 37 | 00 | Idle Mode (P00) |
 | 37 | 06 | Apollo 13 Startup (Perform Task P06,V50,N25) [Hold PRO Key To Initiate Shutdown/Startup] |
 
 
