@@ -21,7 +21,7 @@
 | 21 | 36 | Set the Time on RTC Module |
 | 35 | 00 | Lamp Test |
 | 37 | 00 | Idle Mode P00 |
-| 37 | 06 | Apollo 13 Startup (Hold PRO Key To Initiate Shutdown/Startup) |
+| 37 | 06 | Apollo 13 Startup (Perform Task P06,V50,N25) [Hold PRO Key To Initiate Shutdown/Startup] |
 
 
 
